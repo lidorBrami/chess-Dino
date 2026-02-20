@@ -9,14 +9,6 @@ from projects.dino.modeling.weighted_criterion import WeightedDINOCriterion
 # Number of chess piece classes (13 categories: 0-12 in your COCO dataset)
 NUM_CLASSES = 13
 
-# Class weights based on inverse frequency (higher = rarer class)
-# Order: 1, black-bishop, black-king, black-knight, black-pawn, black-queen,
-#        black-rook, white-bishop, white-king, white-knight, white-pawn, white-queen, white-rook
-# Adjusted based on confusion matrix analysis:
-# - Reduce queen weights (was over-predicting, causing confusion with bishops/kings)
-# - Fix rook/bishop confusion: increase rook weights, reduce bishop weights
-# Weights optimized for FEN accuracy - every piece must be correct
-# Based on confusion matrix: boost classes that get confused most
 CLASS_WEIGHTS = [
     1.0,    # background
     6.0,    # black-bishop
