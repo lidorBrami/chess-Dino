@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(DETREX_ROOT, "projects", "dino"))
 from detectron2.config import LazyConfig, instantiate
 
 CONFIG_PATH = os.path.join(DETREX_ROOT, "projects", "dino", "configs", "dino_swin_large_chess_finetune.py")
-CHECKPOINT_PATH = os.path.join(DETREX_ROOT, "output", "dino_chess_v25", "model_best.pth")
+CHECKPOINT_PATH = os.path.join(DETREX_ROOT, "weights", "dino_chess_model.pth")
 CONFIDENCE_THRESHOLD = 0.3
 
 DINO_TO_ENCODING = {

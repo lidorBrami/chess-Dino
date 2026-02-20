@@ -14,11 +14,12 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, "/home/lidorbr/detrex")
-sys.path.insert(0, "/home/lidorbr/detrex/projects/dino")
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "projects", "dino")))
 
-METRICS_V18_PATH = "/home/lidorbr/detrex/output/dino_chess_v18/metrics.json"
-METRICS_V19_PATH = "/home/lidorbr/detrex/output/dino_chess_v19/metrics.json"
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+METRICS_V18_PATH = os.path.join(_ROOT, "output/dino_chess_v18/metrics.json")
+METRICS_V19_PATH = os.path.join(_ROOT, "output/dino_chess_v19/metrics.json")
 V18_CLS_ACC_PATH = os.path.join(os.path.dirname(__file__), "v18_cls_accuracy.json")
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "report_figures")
 os.makedirs(OUTPUT_DIR, exist_ok=True)

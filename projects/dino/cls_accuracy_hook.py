@@ -10,8 +10,8 @@ import torch
 import cv2
 from collections import defaultdict
 
-sys.path.insert(0, "/home/lidorbr/detrex")
-sys.path.insert(0, "/home/lidorbr/detrex/projects/dino")
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from detectron2.engine import HookBase
 from detectron2.utils.events import get_event_storage

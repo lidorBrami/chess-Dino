@@ -19,17 +19,17 @@ NUM_CLASSES = 13
 # Based on confusion matrix: boost classes that get confused most
 CLASS_WEIGHTS = [
     1.0,    # background
-    6.0,    # black-bishop (reduce over-prediction)
-    2.0,    # black-king (reduce over-prediction)
+    6.0,    # black-bishop
+    2.0,    # black-king
     1.0,    # black-knight
     1.0,    # black-pawn
-    5.0,    # black-queen (boost - 71.9% recall)
-    14.0,   # black-rook (boost - 88.9% recall)
-    14.0,   # white-bishop (boost - 79.6% recall)
+    5.0,    # black-queen
+    14.0,   # black-rook
+    14.0,   # white-bishop
     2.0,    # white-king
     1.0,    # white-knight
     1.0,    # white-pawn
-    4.0,    # white-queen (reduce over-prediction)
+    5.0,    # white-queen (was 4→over-predicted, reduce)
     1.0,    # white-rook
 ]
 

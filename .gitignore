@@ -11,9 +11,11 @@ output/
 logs/
 sbatch_logs/
 results/
+scripts/
 *.pth
 *.tar
 *.zip
+*.png.bak
 
 # experiment dirs
 outputs/
