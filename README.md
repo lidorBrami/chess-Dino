@@ -125,8 +125,9 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/chess-dino.git
-cd chess-dino
+git clone https://github.com/lidorBrami/chess-Dino.git
+cd chess-Dino
+git submodule update --init --recursive
 ```
 
 ### 2. Create conda environment
@@ -160,11 +161,28 @@ cd ..
 pip install -e .
 ```
 
-### 6. Download pretrained weights
+### 6. Download data and weights
 
-DINO Swin-Large pretrained on COCO (starting point for fine-tuning):
+The dataset and model weights are not included in this repository due to their size. Download them from our Google Drive:
+
+> **[Download data and weights from Google Drive](https://drive.google.com/YOUR_LINK_HERE)**
+
+After downloading, place them in the repository root:
 
 ```bash
+mkdir -p weights data
+# Place the following files:
+# weights/dino_swin_large_384_4scale_36ep.pth  (COCO pretrained, ~800MB)
+# weights/dino_chess_model.pth                  (fine-tuned chess detector, ~2.5GB)
+# weights/mobilenet_v3_small_weights.pth        (OOD detector, ~5MB)
+# data/dino/                                    (training & validation data)
+# data/eval/                                    (evaluation data)
+```
+
+Alternatively, download only the COCO pretrained weights for training from scratch:
+
+```bash
+mkdir -p weights
 wget -P weights/ https://github.com/IDEA-Research/detrex-storage/releases/download/v0.2.1/dino_swin_large_384_4scale_36ep.pth
 ```
 
@@ -248,19 +266,13 @@ python projects/dino/train_net.py \
 | Batch size | 2 |
 | Optimizer | AdamW |
 | Learning rate | 1e-5 (backbone: 1e-6) |
-| Weighted loss | Class weights for imbalance (e.g., black-rook 18x) |
+| Weighted loss | Class weights for imbalance (e.g., black-rook 14x, white-bishop 14x) |
 | Eval period | Every 200 iterations |
 | Gradient clip | max_norm=0.1 |
 
 </details>
 
-Output: `./output/dino_chess_v21/model_final.pth`
-
-#### SLURM cluster
-
-```bash
-sbatch scripts/run_chess_training.sbatch
-```
+Output: `./output/dino_chess_v25/model_final.pth`
 
 ### OOD Detector
 
@@ -317,12 +329,6 @@ Evaluates board prediction accuracy against ground-truth FEN annotations:
 | game5 | CSV | CSV with frame numbers |
 
 **Output:** per-image accuracy, overall accuracy per game, per-class recall & precision.
-
-#### SLURM cluster
-
-```bash
-sbatch scripts/run_eval_fen.sbatch
-```
 
 > **Note:** All inference and evaluation require a CUDA GPU.
 
