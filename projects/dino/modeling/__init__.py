@@ -21,3 +21,4 @@ from .dino_transformer import (
 )
 from .dino import DINO
 from .dn_criterion import DINOCriterion
+from .weighted_criterion import WeightedDINOCriterion

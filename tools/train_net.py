@@ -247,6 +247,11 @@ def do_train(args, cfg):
             PathManager.mkdirs(cfg.train.wandb.params.dir)
             writers.append(WandbWriter(cfg))
 
+    custom_hooks = []
+    if hasattr(cfg.train, "custom_hooks"):
+        for hook_cfg in cfg.train.custom_hooks:
+            custom_hooks.append(instantiate(hook_cfg))
+
     trainer.register_hooks(
         [
             hooks.IterationTimer(),
@@ -256,6 +261,7 @@ def do_train(args, cfg):
             if comm.is_main_process()
             else None,
             hooks.EvalHook(cfg.train.eval_period, lambda: do_test(cfg, model)),
+        ] + custom_hooks + [
             hooks.PeriodicWriter(
                 writers,
                 period=cfg.train.log_period,

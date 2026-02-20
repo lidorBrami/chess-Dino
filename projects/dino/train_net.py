@@ -1,17 +1,3 @@
-#!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates.
-"""
-Training script using the new "LazyConfig" python config files.
-
-This scripts reads a given python config file and runs the training or evaluation.
-It can be used to train any models or dataset as long as they can be
-instantiated by the recursive construction defined in the given config file.
-
-Besides lazy construction of models, dataloader, etc., this scripts expects a
-few common configuration parameters currently defined in "configs/common/train.py".
-To add more complicated training logic, you can easily add other configs
-in the config file and implement a new train_net.py to handle them.
-"""
 import logging
 import os
 import sys
@@ -35,6 +21,30 @@ from detectron2.utils import comm
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
+from detectron2.data.datasets import register_coco_instances
+
+
+def register_chess_datasets():
+    from detectron2.data import DatasetCatalog
+    data_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "dino"))
+
+    if "chess_train" not in DatasetCatalog.list():
+        train_json = os.path.join(data_root, "train/train/_annotations.coco.json")
+        train_images = os.path.join(data_root, "train/train")
+        if os.path.exists(train_json):
+            register_coco_instances("chess_train", {}, train_json, train_images)
+            print(f"Registered chess_train dataset")
+
+    if "chess_val" not in DatasetCatalog.list():
+        val_json = os.path.join(data_root, "val/valid/_annotations.coco.json")
+        val_images = os.path.join(data_root, "val/valid")
+        if os.path.exists(val_json):
+            register_coco_instances("chess_val", {}, val_json, val_images)
+            print(f"Registered chess_val dataset")
+
+
+register_chess_datasets()
+
 logger = logging.getLogger("detrex")
 
 
@@ -48,9 +58,6 @@ def match_name_keywords(n, name_keywords):
 
 
 class Trainer(SimpleTrainer):
-    """
-    We've combine Simple and AMP Trainer together.
-    """
 
     def __init__(
         self,
@@ -71,34 +78,21 @@ class Trainer(SimpleTrainer):
         if amp:
             if grad_scaler is None:
                 from torch.cuda.amp import GradScaler
-
                 grad_scaler = GradScaler()
             self.grad_scaler = grad_scaler
 
-        # set True to use amp training
         self.amp = amp
-
-        # gradient clip hyper-params
         self.clip_grad_params = clip_grad_params
 
     def run_step(self):
-        """
-        Implement the standard training logic described above.
-        """
         assert self.model.training, "[Trainer] model was changed to eval mode!"
         assert torch.cuda.is_available(), "[Trainer] CUDA is required for AMP training!"
         from torch.cuda.amp import autocast
 
         start = time.perf_counter()
-        """
-        If you want to do something with the data, you can wrap the dataloader.
-        """
         data = next(self._data_loader_iter)
         data_time = time.perf_counter() - start
 
-        """
-        If you want to do something with the losses, you can wrap the model.
-        """
         loss_dict = self.model(data)
         with autocast(enabled=self.amp):
             if isinstance(loss_dict, torch.Tensor):
@@ -107,10 +101,6 @@ class Trainer(SimpleTrainer):
             else:
                 losses = sum(loss_dict.values())
 
-        """
-        If you need to accumulate gradients or do something similar, you can
-        wrap the optimizer with your custom `zero_grad()` method.
-        """
         self.optimizer.zero_grad()
 
         if self.amp:
@@ -137,6 +127,124 @@ class Trainer(SimpleTrainer):
             )
 
 
+class BestCheckpointHook(hooks.HookBase):
+
+    def __init__(self, eval_period, checkpointer, val_ann_path, val_img_dir,
+                 confidence_threshold=0.3, iou_threshold=0.5):
+        self._period = eval_period
+        self._checkpointer = checkpointer
+        self._confidence_threshold = confidence_threshold
+        self._iou_threshold = iou_threshold
+        self._best_acc = -1.0
+        self._val_anns, self._val_info = self._load_coco(val_ann_path, val_img_dir)
+
+    @staticmethod
+    def _load_coco(ann_path, img_dir):
+        import json
+        from collections import defaultdict
+        with open(ann_path) as f:
+            coco = json.load(f)
+        cat_map = {c['id']: c['name'] for c in coco['categories']}
+        anns = defaultdict(list)
+        for a in coco['annotations']:
+            x, y, w, h = a['bbox']
+            anns[a['image_id']].append({
+                'box': [x, y, x + w, y + h],
+                'class': cat_map[a['category_id']]
+            })
+        info = {img['id']: os.path.join(img_dir, img['file_name']) for img in coco['images']}
+        return anns, info
+
+    @staticmethod
+    def _iou(b1, b2):
+        x1, y1 = max(b1[0], b2[0]), max(b1[1], b2[1])
+        x2, y2 = min(b1[2], b2[2]), min(b1[3], b2[3])
+        inter = max(0, x2 - x1) * max(0, y2 - y1)
+        a1 = (b1[2] - b1[0]) * (b1[3] - b1[1])
+        a2 = (b2[2] - b2[0]) * (b2[3] - b2[1])
+        return inter / (a1 + a2 - inter + 1e-6)
+
+    def _compute_cls_accuracy(self, model):
+        import cv2
+        import numpy as np
+        correct, total = 0, 0
+
+        for img_id, annotations in self._val_anns.items():
+            if img_id not in self._val_info:
+                continue
+            image = cv2.imread(self._val_info[img_id])
+            if image is None:
+                continue
+
+            image_rgb = image[:, :, ::-1]
+            tensor = torch.from_numpy(image_rgb.copy()).permute(2, 0, 1).float()
+
+            with torch.no_grad():
+                outputs = model([{
+                    "image": tensor.to("cuda"),
+                    "height": image.shape[0],
+                    "width": image.shape[1],
+                }])
+
+            inst = outputs[0]["instances"]
+            pred_boxes = inst.pred_boxes.tensor.cpu().numpy()
+            pred_scores = inst.scores.cpu().numpy()
+            pred_classes = inst.pred_classes.cpu().numpy()
+
+            mask = pred_scores >= self._confidence_threshold
+            pred_boxes = pred_boxes[mask]
+            pred_classes = pred_classes[mask]
+
+            gt_matched = [False] * len(annotations)
+
+            for pbox, pcls in zip(pred_boxes, pred_classes):
+                best_iou, best_gi = 0, -1
+                for gi, ann in enumerate(annotations):
+                    if gt_matched[gi]:
+                        continue
+                    iou = self._iou(pbox, ann['box'])
+                    if iou > best_iou and iou >= self._iou_threshold:
+                        best_iou = iou
+                        best_gi = gi
+
+                if best_gi >= 0:
+                    gt_matched[best_gi] = True
+                    gt_name = annotations[best_gi]['class']
+                    DINO_IDX_TO_NAME = {
+                        1: "black-bishop", 2: "black-king", 3: "black-knight",
+                        4: "black-pawn", 5: "black-queen", 6: "black-rook",
+                        7: "white-bishop", 8: "white-king", 9: "white-knight",
+                        10: "white-pawn", 11: "white-queen", 12: "white-rook"
+                    }
+                    pred_name = DINO_IDX_TO_NAME.get(int(pcls), "")
+                    total += 1
+                    if pred_name == gt_name:
+                        correct += 1
+
+        return (correct / total * 100) if total > 0 else 0, correct, total
+
+    def after_step(self):
+        next_iter = self.trainer.iter + 1
+        if next_iter % self._period != 0:
+            return
+        if not comm.is_main_process():
+            return
+
+        model = self.trainer.model
+        model.eval()
+        acc, correct, total = self._compute_cls_accuracy(model)
+        model.train()
+
+        if acc > self._best_acc:
+            self._best_acc = acc
+            self._checkpointer.save("model_best")
+            print(f"\n[BestCheckpoint] New best cls accuracy: {correct}/{total} = {acc:.1f}% "
+                  f"(iter {next_iter}) -> saved model_best.pth\n")
+        else:
+            print(f"\n[BestCheckpoint] Cls accuracy: {correct}/{total} = {acc:.1f}% "
+                  f"(best: {self._best_acc:.1f}%) -> not saved\n")
+
+
 def do_test(cfg, model):
     if "evaluator" in cfg.dataloader:
         ret = inference_on_dataset(
@@ -147,30 +255,11 @@ def do_test(cfg, model):
 
 
 def do_train(args, cfg):
-    """
-    Args:
-        cfg: an object with the following attributes:
-            model: instantiate to a module
-            dataloader.{train,test}: instantiate to dataloaders
-            dataloader.evaluator: instantiate to evaluator for test set
-            optimizer: instantaite to an optimizer
-            lr_multiplier: instantiate to a fvcore scheduler
-            train: other misc config defined in `configs/common/train.py`, including:
-                output_dir (str)
-                init_checkpoint (str)
-                amp.enabled (bool)
-                max_iter (int)
-                eval_period, log_period (int)
-                device (str)
-                checkpointer (dict)
-                ddp (dict)
-    """
     model = instantiate(cfg.model)
     logger = logging.getLogger("detectron2")
     logger.info("Model:\n{}".format(model))
     model.to(cfg.train.device)
 
-    # this is an hack of train_net
     param_dicts = [
         {
             "params": [
@@ -203,7 +292,6 @@ def do_train(args, cfg):
     optim = torch.optim.AdamW(param_dicts, 2e-4, weight_decay=1e-4)
 
     train_loader = instantiate(cfg.dataloader.train)
-
     model = create_ddp_model(model, **cfg.train.ddp)
 
     trainer = Trainer(
@@ -220,6 +308,14 @@ def do_train(args, cfg):
         trainer=trainer,
     )
 
+    data_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "dino"))
+    best_ckpt_hook = BestCheckpointHook(
+        eval_period=cfg.train.eval_period,
+        checkpointer=checkpointer,
+        val_ann_path=os.path.join(data_root, "val/game2/_annotations_merged.coco.json"),
+        val_img_dir=os.path.join(data_root, "val/game2"),
+    )
+
     trainer.register_hooks(
         [
             hooks.IterationTimer(),
@@ -227,7 +323,7 @@ def do_train(args, cfg):
             hooks.PeriodicCheckpointer(checkpointer, **cfg.train.checkpointer)
             if comm.is_main_process()
             else None,
-            hooks.EvalHook(cfg.train.eval_period, lambda: do_test(cfg, model)),
+            best_ckpt_hook,
             hooks.PeriodicWriter(
                 default_writers(cfg.train.output_dir, cfg.train.max_iter),
                 period=cfg.train.log_period,
@@ -239,8 +335,6 @@ def do_train(args, cfg):
 
     checkpointer.resume_or_load(cfg.train.init_checkpoint, resume=args.resume)
     if args.resume and checkpointer.has_checkpoint():
-        # The checkpoint stores the training iteration that just finished, thus we start
-        # at the next iteration
         start_iter = trainer.iter + 1
     else:
         start_iter = 0

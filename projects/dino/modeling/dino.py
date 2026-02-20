@@ -296,14 +296,27 @@ class DINO(nn.Module):
             box_cls = output["pred_logits"]
             box_pred = output["pred_boxes"]
             results = self.inference(box_cls, box_pred, images.image_sizes)
+            
+            # Extract decoder features from last layer for OOD detection
+            # inter_states shape: [num_decoder_layers, bs, num_query, hidden_dim]
+            decoder_features = inter_states[-1]  # [bs, num_query, hidden_dim]
+            
             processed_results = []
-            for results_per_image, input_per_image, image_size in zip(
+            for idx, (results_per_image, input_per_image, image_size) in enumerate(zip(
                 results, batched_inputs, images.image_sizes
-            ):
+            )):
                 height = input_per_image.get("height", image_size[0])
                 width = input_per_image.get("width", image_size[1])
                 r = detector_postprocess(results_per_image, height, width)
-                processed_results.append({"instances": r})
+                
+                # Get decoder features for this image's top-k selected queries
+                # The inference() method selects top-k, we need to track which queries were selected
+                # For simplicity, include all decoder features and let caller filter by score
+                result_dict = {
+                    "instances": r,
+                    "decoder_features": decoder_features[idx],  # [num_query, hidden_dim]
+                }
+                processed_results.append(result_dict)
             return processed_results
 
     def visualize_training(self, batched_inputs, results):

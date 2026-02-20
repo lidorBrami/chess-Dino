@@ -1,273 +1,337 @@
-<div align="center">
-  <img src="./assets/logo_2.png" width="30%">
-</div>
-<h2 align="center">🦖detrex: Benchmarking Detection Transformers</h2>
 <p align="center">
-    <a href="https://github.com/IDEA-Research/detrex/releases">
-        <img alt="release" src="https://img.shields.io/github/v/release/IDEA-Research/detrex">
-    </a>
-    <a href="https://detrex.readthedocs.io/en/latest/index.html">
-        <img alt="docs" src="https://img.shields.io/badge/docs-latest-blue">
-    </a>
-    <a href='https://detrex.readthedocs.io/en/latest/?badge=latest'>
-    <img src='https://readthedocs.org/projects/detrex/badge/?version=latest' alt='Documentation Status' />
-    </a>
-    <a href="https://github.com/IDEA-Research/detrex/blob/main/LICENSE">
-        <img alt="GitHub" src="https://img.shields.io/github/license/IDEA-Research/detrex.svg?color=blue">
-    </a>
-    <a href="https://github.com/IDEA-Research/detrex/pulls">
-        <img alt="PRs Welcome" src="https://img.shields.io/badge/PRs-welcome-pink.svg">
-    </a>
-    <a href="https://github.com/IDEA-Research/detrex/issues">
-        <img alt="open issues" src="https://img.shields.io/github/issues/IDEA-Research/detrex">
-    </a>
+  <h1 align="center">♟️ Chess Piece Detection with DINO + OOD Detection</h1>
+  <p align="center">
+    <b>End-to-end chess board recognition from images using DINO object detection and out-of-distribution detection</b>
+  </p>
+  <p align="center">
+    <img src="https://img.shields.io/badge/PyTorch-1.10.1-red?logo=pytorch" alt="PyTorch">
+    <img src="https://img.shields.io/badge/Detectron2-0.6-blue" alt="Detectron2">
+    <img src="https://img.shields.io/badge/Python-3.7-green?logo=python" alt="Python">
+    <img src="https://img.shields.io/badge/CUDA-11.3-76B900?logo=nvidia" alt="CUDA">
+  </p>
 </p>
 
+---
 
-<div align="center">
+## 📋 Overview
 
-<!-- <a href="https://arxiv.org/abs/2306.07265">📚Read detrex Benchmarking Paper</a> <sup><i><font size="3" color="#FF0000">New</font></i></sup> |
-<a href="https://rentainhe.github.io/projects/detrex/">🏠Project Page</a> <sup><i><font size="3" color="#FF0000">New</font></i></sup> |  [🏷️Cite detrex](#citation) -->
+A two-stage system that takes a chessboard image and outputs a complete board state (FEN notation):
 
-[📚Read detrex Benchmarking Paper](https://arxiv.org/abs/2306.07265) | [🏠Project Page](https://rentainhe.github.io/projects/detrex/) | [🏷️Cite detrex](#citation) | [🚢DeepDataSpace](https://github.com/IDEA-Research/deepdataspace)
+1. **DINO Piece Detector** — Swin-Large backbone fine-tuned to detect and classify all 12 chess piece types
+2. **OOD Detector** — MobileNetV3-Small binary classifier that identifies occluded/unknown squares (e.g., player's hand)
 
-</div>
+Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR with Improved DeNoising Anchor Boxes).
 
+<p align="center">
+  <img src="report/figures/system_architecture.png" width="700" alt="System Architecture">
+</p>
 
-<div align="center">
+---
 
-[📘Documentation](https://detrex.readthedocs.io/en/latest/index.html) |
-[🛠️Installation](https://detrex.readthedocs.io/en/latest/tutorials/Installation.html) |
-[👀Model Zoo](https://detrex.readthedocs.io/en/latest/tutorials/Model_Zoo.html) |
-[🚀Awesome DETR](https://github.com/IDEA-Research/awesome-detection-transformer) |
-[🆕News](#whats-new) |
-[🤔Reporting Issues](https://github.com/IDEA-Research/detrex/issues/new/choose)
+## 📊 Results
 
-</div>
+<table>
+<tr>
+<td><img src="report/figures/confusion_matrix.png" width="400" alt="Confusion Matrix"></td>
+<td><img src="report/figures/per_class_recall_precision.png" width="400" alt="Per-Class Recall & Precision"></td>
+</tr>
+<tr>
+<td><img src="report/figures/per_game_accuracy.png" width="400" alt="Per-Game Accuracy"></td>
+<td><img src="report/figures/precision_recall_scatter.png" width="400" alt="Precision-Recall Scatter"></td>
+</tr>
+</table>
 
+### Training Curves
 
-## Introduction
+<table>
+<tr>
+<td><img src="report/figures/training_loss.png" width="400" alt="Training Loss"></td>
+<td><img src="report/figures/train_val_curves.png" width="400" alt="Train/Val Curves"></td>
+</tr>
+<tr>
+<td><img src="report/figures/cls_accuracy_curves.png" width="400" alt="Classification Accuracy"></td>
+<td><img src="report/figures/validation_ap_progression.png" width="400" alt="Validation AP"></td>
+</tr>
+</table>
 
-detrex is an open-source toolbox that provides state-of-the-art Transformer-based detection algorithms. It is built on top of [Detectron2](https://github.com/facebookresearch/detectron2) and its module design is partially borrowed from [MMDetection](https://github.com/open-mmlab/mmdetection) and [DETR](https://github.com/facebookresearch/detr). Many thanks for their nicely organized code. The main branch works with **Pytorch 1.10+** or higher (we recommend **Pytorch 1.12**).
+---
 
-<div align="center">
-  <img src="./assets/detr_arch.png" width="100%"/>
-</div>
+## 🏗️ Project Structure
 
-<details open>
-<summary> Major Features </summary>
+```
+├── projects/dino/                   # DINO training (detrex framework)
+│   ├── train_net.py                 #   Training script
+│   ├── inference_chess.py           #   Single-image inference with visualization
+│   ├── cls_accuracy_hook.py         #   Classification accuracy hook
+│   ├── configs/
+│   │   └── dino_swin_large_chess_finetune.py
+│   └── modeling/
+│       ├── dino.py                  #   DINO model
+│       ├── weighted_criterion.py    #   Weighted loss for class imbalance
+│       └── ood_detector.py          #   Mahalanobis OOD detector
+│
+├── inference/                       # Inference & evaluation pipeline
+│   ├── predict_board.py             #   Full board prediction (DINO + OOD)
+│   ├── pieces_detection.py          #   DINO piece detection module
+│   ├── ood_detection.py             #   OOD square detection module
+│   ├── ood_model.py                 #   MobileNetV3 OOD model definition
+│   ├── train_ood.py                 #   OOD model training
+│   ├── cfg.py                       #   Configuration constants
+│   └── eval_fen_tests.py            #   FEN accuracy evaluation
+│
+├── data/
+│   ├── dino/                        #   DINO piece detection data
+│   │   ├── train/train/             #     Training (COCO format)
+│   │   └── val/                     #     Validation (COCO format)
+│   ├── ood/                         #   OOD training (binary: 0=ID, 2=OOD)
+│   └── eval/                        #   End-to-end evaluation
+│       ├── game13/                  #     images/ + FEN.txt
+│       ├── game2/                   #     images/ + game2.csv
+│       └── game5/                   #     images/ + game5.csv
+│
+├── weights/                         # Model checkpoints
+│   ├── dino_swin_large_384_4scale_36ep.pth   # COCO pretrained (for training)
+│   ├── dino_chess_model.pth                   # Fine-tuned chess detector
+│   └── mobilenet_v3_small_weights.pth         # OOD detector
+│
+├── scripts/                         # SLURM batch scripts
+├── report/                          # Report figures & PDFs
+├── detectron2/                      # Detectron2 framework (included)
+├── detrex/                          # Detrex framework (included)
+├── requirements.txt
+└── README.md
+```
 
-- **Modular Design.** detrex decomposes the Transformer-based detection framework into various components which help users easily build their own customized models.
+---
 
-- **Strong Baselines.** detrex provides a series of strong baselines for Transformer-based detection models. We have further boosted the model performance from **0.2 AP** to **1.1 AP** through optimizing hyper-parameters among most of the supported algorithms.
+## 🎯 Classes
 
-- **Easy to Use.** detrex is designed to be **light-weight** and easy for users to use:
-  - [LazyConfig System](https://detectron2.readthedocs.io/en/latest/tutorials/lazyconfigs.html) for more flexible syntax and cleaner config files.
-  - Light-weight [training engine](./tools/train_net.py) modified from detectron2 [lazyconfig_train_net.py](https://github.com/facebookresearch/detectron2/blob/main/tools/lazyconfig_train_net.py)
+13 detection classes — 12 piece types + background:
 
-Apart from detrex, we also released a repo [Awesome Detection Transformer](https://github.com/IDEA-Research/awesome-detection-transformer) to present papers about Transformer for detection and segmentation.
+| ID | Class | ID | Class |
+|:--:|:------|:--:|:------|
+| 1 | ♝ black-bishop | 7 | ♗ white-bishop |
+| 2 | ♚ black-king | 8 | ♔ white-king |
+| 3 | ♞ black-knight | 9 | ♘ white-knight |
+| 4 | ♟ black-pawn | 10 | ♙ white-pawn |
+| 5 | ♛ black-queen | 11 | ♕ white-queen |
+| 6 | ♜ black-rook | 12 | ♖ white-rook |
+| 0 | background | **13** | **OOD (occluded)** |
 
-</details>
+---
 
-## Fun Facts
-The repo name detrex has several interpretations:
-- <font color=blue> <b> detr-ex </b> </font>: We take our hats off to DETR and regard this repo as an extension of Transformer-based detection algorithms.
+## 🚀 Environment Setup
 
-- <font color=#db7093> <b> det-rex </b> </font>: rex literally means 'king' in Latin. We hope this repo can help advance the state of the art on object detection by providing the best Transformer-based detection algorithms from the research community.
+### 1. Clone the repository
 
-- <font color=#008000> <b> de-t.rex </b> </font>: de means 'the' in Dutch. T.rex, also called Tyrannosaurus Rex, means 'king of the tyrant lizards' and connects to our research work 'DINO', which is short for Dinosaur.
+```bash
+git clone https://github.com/<your-username>/chess-dino.git
+cd chess-dino
+```
 
-## What's New
-v0.5.0 was released on 16/07/2023:
-- Support [Focus-DETR (ICCV'2023)](./projects/focus_detr/).
-- Support [SQR-DETR (CVPR'2023)](https://github.com/IDEA-Research/detrex/tree/main/projects/sqr_detr), credits to [Fangyi Chen](https://github.com/Fangyi-Chen)
-- Support [Align-DETR (ArXiv'2023)](./projects/align_detr/), credits to [Zhi Cai](https://github.com/FelixCaae)
-- Support [EVA-01 (CVPR'2023 Highlight)](https://github.com/baaivision/EVA/tree/master/EVA-01) and [EVA-02 (ArXiv'2023)](https://github.com/baaivision/EVA/tree/master/EVA-02) backbones, please check [DINO-EVA](./projects/dino_eva/) for more benchmarking results.
+### 2. Create conda environment
 
-Please see [changelog.md](./changlog.md) for details and release history.
+```bash
+conda create -n detrex python=3.7 -y
+conda activate detrex
+```
 
-## Installation
+### 3. Install PyTorch (CUDA 11.3)
 
-Please refer to [Installation Instructions](https://detrex.readthedocs.io/en/latest/tutorials/Installation.html) for the details of installation.
+```bash
+conda install pytorch==1.10.1 torchvision==0.11.2 cudatoolkit=11.3 -c pytorch -c conda-forge
+```
 
-## Getting Started
+### 4. Install dependencies
 
-Please refer to [Getting Started with detrex](https://detrex.readthedocs.io/en/latest/tutorials/Getting_Started.html) for the basic usage of detrex. We also provides other tutorials for:
-- [Learn about the config system of detrex](https://detrex.readthedocs.io/en/latest/tutorials/Config_System.html)
-- [How to convert the pretrained weights from original detr repo into detrex format](https://detrex.readthedocs.io/en/latest/tutorials/Converters.html)
-- [Visualize your training data and testing results on COCO dataset](https://detrex.readthedocs.io/en/latest/tutorials/Tools.html#visualization)
-- [Analyze the model under detrex](https://detrex.readthedocs.io/en/latest/tutorials/Tools.html#model-analysis)
-- [Download and initialize with the pretrained backbone weights](https://detrex.readthedocs.io/en/latest/tutorials/Using_Pretrained_Backbone.html)
-- [Frequently asked questions](https://github.com/IDEA-Research/detrex/issues/109)
-- [A simple onnx convert tutorial provided by powermano](https://github.com/IDEA-Research/detrex/issues/192)
-- Simple training techniques: [Model-EMA](https://github.com/IDEA-Research/detrex/pull/201), [Mixed Precision Training](https://github.com/IDEA-Research/detrex/pull/198), [Activation Checkpoint](https://github.com/IDEA-Research/detrex/pull/200)
-- [Simple tutorial about custom dataset training](https://github.com/IDEA-Research/detrex/pull/187)
+```bash
+pip install -r requirements.txt
+```
 
-Although some of the tutorials are currently presented with relatively simple content, we will constantly improve our documentation to help users achieve a better user experience.
+### 5. Install detectron2 & detrex
 
-## Documentation
+Both are included in this repository. Install in development mode:
 
-Please see [documentation](https://detrex.readthedocs.io/en/latest/index.html) for full API documentation and tutorials.
+```bash
+cd detectron2
+pip install -e .
+cd ..
 
-## Model Zoo
-Results and models are available in [model zoo](https://detrex.readthedocs.io/en/latest/tutorials/Model_Zoo.html).
+pip install -e .
+```
 
-<details open>
-<summary> Supported methods </summary>
+### 6. Download pretrained weights
 
-- [x] [DETR (ECCV'2020)](./projects/detr/)
-- [x] [Deformable-DETR (ICLR'2021 Oral)](./projects/deformable_detr/)
-- [x] [PnP-DETR (ICCV'2021)](./projects/pnp_detr/)
-- [x] [Conditional-DETR (ICCV'2021)](./projects/conditional_detr/)
-- [x] [Anchor-DETR (AAAI 2022)](./projects/anchor_detr/)
-- [x] [DAB-DETR (ICLR'2022)](./projects/dab_detr/)
-- [x] [DAB-Deformable-DETR (ICLR'2022)](./projects/dab_deformable_detr/)
-- [x] [DN-DETR (CVPR'2022 Oral)](./projects/dn_detr/)
-- [x] [DN-Deformable-DETR (CVPR'2022 Oral)](./projects/dn_deformable_detr/)
-- [x] [Group-DETR (ICCV'2023)](./projects/group_detr/)
-- [x] [DETA (ArXiv'2022)](./projects/deta/)
-- [x] [DINO (ICLR'2023)](./projects/dino/)
-- [x] [H-Deformable-DETR (CVPR'2023)](./projects/h_deformable_detr/)
-- [x] [MaskDINO (CVPR'2023)](./projects/maskdino/)
-- [x] [CO-MOT (ArXiv'2023)](./projects/co_mot/)
-- [x] [SQR-DETR (CVPR'2023)](./projects/sqr_detr/)
-- [x] [Align-DETR (ArXiv'2023)](./projects/align_detr/)
-- [x] [EVA-01 (CVPR'2023 Highlight)](./projects/dino_eva/)
-- [x] [EVA-02 (ArXiv'2023)](./projects/dino_eva/)
-- [x] [Focus-DETR (ICCV'2023)](./projects/focus_detr/)
+DINO Swin-Large pretrained on COCO (starting point for fine-tuning):
 
-Please see [projects](./projects/) for the details about projects that are built based on detrex.
+```bash
+wget -P weights/ https://github.com/IDEA-Research/detrex-storage/releases/download/v0.2.1/dino_swin_large_384_4scale_36ep.pth
+```
 
-</details>
+---
 
+## 📁 Data Preparation
 
-## License
+### DINO training data (COCO format)
 
-This project is released under the [Apache 2.0 license](LICENSE).
+```
+data/dino/
+├── train/
+│   └── train/
+│       ├── _annotations.coco.json
+│       ├── *.jpg
+│       ├── game6/
+│       │   ├── _annotations.coco.json
+│       │   └── *.jpg
+│       └── ...
+└── val/
+    └── game2/
+        ├── _annotations_merged.coco.json
+        └── *.jpg
+```
 
+### OOD training data
 
-## Acknowledgement
-- detrex is an open-source toolbox for Transformer-based detection algorithms created by researchers of **IDEACVR**. We appreciate all contributions to detrex!
-- detrex is built based on [Detectron2](https://github.com/facebookresearch/detectron2) and part of its module design is borrowed from [MMDetection](https://github.com/open-mmlab/mmdetection), [DETR](https://github.com/facebookresearch/detr), and [Deformable-DETR](https://github.com/fundamentalvision/Deformable-DETR).
+```
+data/ood/
+├── train/
+│   ├── 0/   ← in-distribution square crops (*.jpg)
+│   └── 2/   ← OOD square crops: hands, occluded (*.jpg)
+├── val/
+│   ├── 0/
+│   └── 2/
+└── test/
+    ├── 0/
+    └── 2/
+```
 
+### End-to-end evaluation data
 
-## Citation
-If you use this toolbox in your research or wish to refer to the baseline results published here, please use the following BibTeX entries:
+```
+data/eval/
+├── game13/
+│   ├── images/
+│   └── FEN.txt
+├── game2/
+│   ├── images/
+│   └── game2.csv
+└── game5/
+    ├── images/
+    └── game5.csv
+```
 
-- Citing **detrex**:
+---
 
-```BibTeX
-@misc{ren2023detrex,
-      title={detrex: Benchmarking Detection Transformers}, 
-      author={Tianhe Ren and Shilong Liu and Feng Li and Hao Zhang and Ailing Zeng and Jie Yang and Xingyu Liao and Ding Jia and Hongyang Li and He Cao and Jianan Wang and Zhaoyang Zeng and Xianbiao Qi and Yuhui Yuan and Jianwei Yang and Lei Zhang},
-      year={2023},
-      eprint={2306.07265},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-}
+## 🏋️ Training
+
+### DINO — Piece Detection
+
+```bash
+# Single GPU
+python projects/dino/train_net.py \
+    --config-file projects/dino/configs/dino_swin_large_chess_finetune.py \
+    --num-gpus 1
+
+# Multi-GPU
+python projects/dino/train_net.py \
+    --config-file projects/dino/configs/dino_swin_large_chess_finetune.py \
+    --num-gpus 2
 ```
 
 <details>
-<summary> Citing Supported Algorithms </summary>
+<summary><b>Training hyperparameters</b></summary>
 
-```BibTex
-@inproceedings{carion2020end,
-  title={End-to-end object detection with transformers},
-  author={Carion, Nicolas and Massa, Francisco and Synnaeve, Gabriel and Usunier, Nicolas and Kirillov, Alexander and Zagoruyko, Sergey},
-  booktitle={European conference on computer vision},
-  pages={213--229},
-  year={2020},
-  organization={Springer}
-}
-
-@inproceedings{
-  zhu2021deformable,
-  title={Deformable {\{}DETR{\}}: Deformable Transformers for End-to-End Object Detection},
-  author={Xizhou Zhu and Weijie Su and Lewei Lu and Bin Li and Xiaogang Wang and Jifeng Dai},
-  booktitle={International Conference on Learning Representations},
-  year={2021},
-  url={https://openreview.net/forum?id=gZ9hCDWe6ke}
-}
-
-@inproceedings{meng2021-CondDETR,
-  title       = {Conditional DETR for Fast Training Convergence},
-  author      = {Meng, Depu and Chen, Xiaokang and Fan, Zejia and Zeng, Gang and Li, Houqiang and Yuan, Yuhui and Sun, Lei and Wang, Jingdong},
-  booktitle   = {Proceedings of the IEEE International Conference on Computer Vision (ICCV)},
-  year        = {2021}
-}
-
-@inproceedings{
-  liu2022dabdetr,
-  title={{DAB}-{DETR}: Dynamic Anchor Boxes are Better Queries for {DETR}},
-  author={Shilong Liu and Feng Li and Hao Zhang and Xiao Yang and Xianbiao Qi and Hang Su and Jun Zhu and Lei Zhang},
-  booktitle={International Conference on Learning Representations},
-  year={2022},
-  url={https://openreview.net/forum?id=oMI9PjOb9Jl}
-}
-
-@inproceedings{li2022dn,
-  title={Dn-detr: Accelerate detr training by introducing query denoising},
-  author={Li, Feng and Zhang, Hao and Liu, Shilong and Guo, Jian and Ni, Lionel M and Zhang, Lei},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-  pages={13619--13627},
-  year={2022}
-}
-
-@inproceedings{
-  zhang2023dino,
-  title={{DINO}: {DETR} with Improved DeNoising Anchor Boxes for End-to-End Object Detection},
-  author={Hao Zhang and Feng Li and Shilong Liu and Lei Zhang and Hang Su and Jun Zhu and Lionel Ni and Heung-Yeung Shum},
-  booktitle={The Eleventh International Conference on Learning Representations },
-  year={2023},
-  url={https://openreview.net/forum?id=3mRwyG5one}
-}
-
-@InProceedings{Chen_2023_ICCV,
-  author    = {Chen, Qiang and Chen, Xiaokang and Wang, Jian and Zhang, Shan and Yao, Kun and Feng, Haocheng and Han, Junyu and Ding, Errui and Zeng, Gang and Wang, Jingdong},
-  title     = {Group DETR: Fast DETR Training with Group-Wise One-to-Many Assignment},
-  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
-  month     = {October},
-  year      = {2023},
-  pages     = {6633-6642}
-}
-
-@InProceedings{Jia_2023_CVPR,
-  author    = {Jia, Ding and Yuan, Yuhui and He, Haodi and Wu, Xiaopei and Yu, Haojun and Lin, Weihong and Sun, Lei and Zhang, Chao and Hu, Han},
-  title     = {DETRs With Hybrid Matching},
-  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  month     = {June},
-  year      = {2023},
-  pages     = {19702-19712}
-}
-
-@InProceedings{Li_2023_CVPR,
-  author    = {Li, Feng and Zhang, Hao and Xu, Huaizhe and Liu, Shilong and Zhang, Lei and Ni, Lionel M. and Shum, Heung-Yeung},
-  title     = {Mask DINO: Towards a Unified Transformer-Based Framework for Object Detection and Segmentation},
-  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  month     = {June},
-  year      = {2023},
-  pages     = {3041-3050}
-}
-
-@article{yan2023bridging,
-  title={Bridging the Gap Between End-to-end and Non-End-to-end Multi-Object Tracking},
-  author={Yan, Feng and Luo, Weixin and Zhong, Yujie and Gan, Yiyang and Ma, Lin},
-  journal={arXiv preprint arXiv:2305.12724},
-  year={2023}
-}
-
-@InProceedings{Chen_2023_CVPR,
-  author    = {Chen, Fangyi and Zhang, Han and Hu, Kai and Huang, Yu-Kai and Zhu, Chenchen and Savvides, Marios},
-  title     = {Enhanced Training of Query-Based Object Detection via Selective Query Recollection},
-  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  month     = {June},
-  year      = {2023},
-  pages     = {23756-23765}
-}
-```
-
+| Parameter | Value |
+|-----------|-------|
+| Backbone | Swin-Large 384, COCO pretrained |
+| Iterations | 5,000 |
+| Batch size | 2 |
+| Optimizer | AdamW |
+| Learning rate | 1e-5 (backbone: 1e-6) |
+| Weighted loss | Class weights for imbalance (e.g., black-rook 18x) |
+| Eval period | Every 200 iterations |
+| Gradient clip | max_norm=0.1 |
 
 </details>
 
+Output: `./output/dino_chess_v21/model_final.pth`
 
+#### SLURM cluster
 
+```bash
+sbatch scripts/run_chess_training.sbatch
+```
+
+### OOD Detector
+
+```bash
+cd inference
+python train_ood.py
+```
+
+Trains MobileNetV3-Small binary classifier (ID vs OOD) for 30 epochs with balanced sampling.
+
+---
+
+## 🔍 Inference
+
+### Single image — bounding box visualization
+
+```bash
+python projects/dino/inference_chess.py \
+    --image path/to/chessboard.jpg \
+    --output path/to/output.jpg \
+    --checkpoint weights/dino_chess_model.pth \
+    --threshold 0.3
+```
+
+### Full board prediction — DINO + OOD → 8x8 board state
+
+```bash
+cd inference
+python predict_board.py
+```
+
+Pipeline:
+1. **OOD detection** — crops each of 64 squares, classifies ID vs OOD
+2. **Piece detection** — runs DINO on the full image, assigns detections to grid squares
+3. **Merge** — empty squares flagged as OOD get class 13; detected pieces are preserved
+
+---
+
+## 📈 Evaluation
+
+### FEN accuracy evaluation
+
+```bash
+cd inference
+python eval_fen_tests.py
+```
+
+Evaluates board prediction accuracy against ground-truth FEN annotations:
+
+| Game | Format | Description |
+|------|--------|-------------|
+| game13 | TXT | FEN.txt + image folder |
+| game2 | CSV | CSV with frame numbers |
+| game5 | CSV | CSV with frame numbers |
+
+**Output:** per-image accuracy, overall accuracy per game, per-class recall & precision.
+
+#### SLURM cluster
+
+```bash
+sbatch scripts/run_eval_fen.sbatch
+```
+
+> **Note:** All inference and evaluation require a CUDA GPU.
+
+---
+
+## 📦 Model Weights
+
+| Model | File | Description |
+|:------|:-----|:------------|
+| DINO Swin-Large (pretrained) | `weights/dino_swin_large_384_4scale_36ep.pth` | COCO pretrained — download for training |
+| DINO Chess (fine-tuned) | `weights/dino_chess_model.pth` | Fine-tuned chess piece detector |
+| OOD Detector | `weights/mobilenet_v3_small_weights.pth` | MobileNetV3-Small binary classifier |

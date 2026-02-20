@@ -3,6 +3,18 @@
 # auto generated file at installation
 detrex/config/configs
 detrex/version.py
+
+# Large files - do not upload
+data/
+weights/
+output/
+logs/
+sbatch_logs/
+results/
+*.pth
+*.tar
+*.zip
+
 # experiment dirs
 outputs/
 
