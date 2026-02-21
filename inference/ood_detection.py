@@ -17,19 +17,15 @@ def grid_edges(total: int) -> List[int]:
 
 def get_single_square(img: Image.Image, row: int, column: int, x_edges: List[int], y_edges: List[int]) -> Image.Image:
     width, height = img.size
-
     x0, x1 = x_edges[column], x_edges[column + 1]
     y0, y1 = y_edges[row], y_edges[row + 1]
-
     bx0 = max(0, x0 - OUTER_BORDER_PX)
     by0 = max(0, y0 - OUTER_BORDER_PX)
     bx1 = min(width, x1 + OUTER_BORDER_PX)
     by1 = min(height, y1 + OUTER_BORDER_PX)
+    return img.crop((bx0, by0, bx1, by1))
 
-    crop = img.crop((bx0, by0, bx1, by1))
-    return crop
-
-def corp_and_Iterate_squares(img: Image.Image)-> list[list[bool]]:
+def corp_and_Iterate_squares(img: Image.Image) -> list[list[bool]]:
     model = OOD_DETECTOR(pretrained=PRETRAINED)
     load_checkpoint(model, CKPT_PATH, DEVICE)
 
@@ -65,17 +61,14 @@ def detect_ood(image: Image.Image, model: OOD_DETECTOR):
     return prob, (prob > THRESHOLD_PROB)
 
 
-def eval_model(model: OOD_DETECTOR):
+def main():
     model = OOD_DETECTOR(pretrained=PRETRAINED)
     load_checkpoint(model, CKPT_PATH, DEVICE)
 
-    """Evaluate on {PARENT_FOLDER}/{eval_on}/0 and /2."""
     id_folder = Path(PARENT_FOLDER) / EVAL_MODEL_ON / ID_CLASS_DIR
     ood_folder = Path(PARENT_FOLDER) / EVAL_MODEL_ON / OOD_CLASS_DIR
 
-    rows = []
-    y_true = []
-    p_ood = []
+    rows, y_true, p_ood = [], [], []
 
     for photo_path in id_folder.glob("*.jpg"):
         img = Image.open(photo_path).convert("RGB")
@@ -93,10 +86,8 @@ def eval_model(model: OOD_DETECTOR):
 
     metrics = compute_metrics_from_probs(np.array(y_true), np.array(p_ood), threshold=THRESHOLD_PROB)
 
-    # Save per-image scores (for plotting histograms/ROC later)
     out_csv = Path(OUT_CSV)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
-
     with open(out_csv, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["path", "label", "p_ood"])
         w.writeheader()
@@ -104,19 +95,6 @@ def eval_model(model: OOD_DETECTOR):
             w.writerow({"path": path_str, "label": int(label), "p_ood": float(prob)})
 
     return metrics
-
-
-def main():
-    model = OOD_DETECTOR(pretrained=PRETRAINED)
-    load_checkpoint(model, CKPT_PATH, DEVICE)
-
-    metrics = eval_model(model)
-
-    print(
-        f"Evaluating on={EVAL_MODEL_ON} | TP={metrics['tp']} FP={metrics['fp']} FN={metrics['fn']} TN={metrics['tn']} | "
-        f"Accuracy={metrics['accuracy']:.4f} Recall(OOD)={metrics['recall']:.4f} AUROC={metrics['auroc']:.4f} | "
-        f"Threshold={THRESHOLD_PROB:.3f}"
-    )
 
 
 if __name__ == "__main__":

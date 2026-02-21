@@ -154,12 +154,12 @@ model.criterion = L(WeightedDINOCriterion)(
         gamma=2.0,
     ),
     weight_dict={
-        "loss_class": 5.0,  # Boost classification - piece identity is most important
-        "loss_bbox": 2.0,   # Reduced from 5 - less focus on bbox
-        "loss_giou": 2.0,
-        "loss_class_dn": 5.0,  # Match classification boost
-        "loss_bbox_dn": 2.0,   # Reduced from 5
-        "loss_giou_dn": 2.0,
+        "loss_class": 1.0,
+        "loss_bbox": 1.0,
+        "loss_giou": 1.0,
+        "loss_class_dn": 1.0,
+        "loss_bbox_dn": 1.0,
+        "loss_giou_dn": 1.0,
     },
     loss_class_type="focal_loss",
     alpha=0.25,

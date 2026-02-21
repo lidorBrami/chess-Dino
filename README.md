@@ -28,34 +28,6 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 
 ---
 
-## 📊 Results
-
-<table>
-<tr>
-<td><img src="report/figures/confusion_matrix.png" width="400" alt="Confusion Matrix"></td>
-<td><img src="report/figures/per_class_recall_precision.png" width="400" alt="Per-Class Recall & Precision"></td>
-</tr>
-<tr>
-<td><img src="report/figures/per_game_accuracy.png" width="400" alt="Per-Game Accuracy"></td>
-<td><img src="report/figures/precision_recall_scatter.png" width="400" alt="Precision-Recall Scatter"></td>
-</tr>
-</table>
-
-### Training Curves
-
-<table>
-<tr>
-<td><img src="report/figures/training_loss.png" width="400" alt="Training Loss"></td>
-<td><img src="report/figures/train_val_curves.png" width="400" alt="Train/Val Curves"></td>
-</tr>
-<tr>
-<td><img src="report/figures/cls_accuracy_curves.png" width="400" alt="Classification Accuracy"></td>
-<td><img src="report/figures/validation_ap_progression.png" width="400" alt="Validation AP"></td>
-</tr>
-</table>
-
----
-
 ## 🏗️ Project Structure
 
 ```
@@ -244,6 +216,14 @@ data/eval/
 
 ### DINO — Piece Detection
 
+Before training, update the following paths in `projects/dino/configs/dino_swin_large_chess_finetune.py`:
+
+- **`train.init_checkpoint`** — path to the starting weights:
+  - For fine-tuning from COCO: `weights/dino_swin_large_384_4scale_36ep.pth`
+  - For continued training from a chess model: `weights/dino_chess_model.pth`
+- **`train.output_dir`** — where to save training outputs
+- **`CLASS_WEIGHTS`** — per-class weights for the weighted focal loss
+
 ```bash
 # Single GPU
 python projects/dino/train_net.py \
@@ -286,6 +266,8 @@ Trains MobileNetV3-Small binary classifier (ID vs OOD) for 30 epochs with balanc
 ---
 
 ## 🔍 Inference
+
+Before running inference, ensure the model weights are placed in the `weights/` directory. The checkpoint path is configured in `inference/pieces_detection.py` (`CHECKPOINT_PATH` variable).
 
 ### Single image — bounding box visualization
 

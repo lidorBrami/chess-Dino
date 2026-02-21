@@ -6,23 +6,22 @@ from detrex.modeling.matcher import HungarianMatcher
 from .models.dino_swin_large_384 import model
 from projects.dino.modeling.weighted_criterion import WeightedDINOCriterion
 
-# Number of chess piece classes (13 categories: 0-12 in your COCO dataset)
 NUM_CLASSES = 13
 
 CLASS_WEIGHTS = [
     1.0,    # background
-    6.0,    # black-bishop
-    2.0,    # black-king
+    3.0,    # black-bishop
+    1.0,    # black-king
     1.0,    # black-knight
     1.0,    # black-pawn
-    5.0,    # black-queen
-    14.0,   # black-rook
-    14.0,   # white-bishop
-    2.0,    # white-king
+    3.0,    # black-queen (boosted from 0.5)
+    18.0,   # black-rook
+    10.0,   # white-bishop
+    1.0,    # white-king
     1.0,    # white-knight
     1.0,    # white-pawn
-    5.0,    # white-queen (was 4→over-predicted, reduce)
-    1.0,    # white-rook
+    3.0,    # white-queen (boosted from 0.5)
+    2.0,    # white-rook
 ]
 
 # Register chess datasets
@@ -146,12 +145,12 @@ model.criterion = L(WeightedDINOCriterion)(
         gamma=2.0,
     ),
     weight_dict={
-        "loss_class": 5.0,  # Boost classification - piece identity is most important
-        "loss_bbox": 2.0,   # Reduced from 5 - less focus on bbox
-        "loss_giou": 2.0,
-        "loss_class_dn": 5.0,  # Match classification boost
-        "loss_bbox_dn": 2.0,   # Reduced from 5
-        "loss_giou_dn": 2.0,
+        "loss_class": 100.0,
+        "loss_bbox": 1.0,
+        "loss_giou": 1.0,
+        "loss_class_dn": 100.0,
+        "loss_bbox_dn": 1.0,
+        "loss_giou_dn": 1.0,
     },
     loss_class_type="focal_loss",
     alpha=0.25,
