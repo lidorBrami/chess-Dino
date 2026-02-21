@@ -29,12 +29,10 @@ class SquaresDataset(Dataset):
     def __init__(self, root: str, split: str):
         self.root = Path(root) / split
 
-        # Map folder names to binary labels
         self.class_map = {
             ID_CLASS_DIR: 0,
             OOD_CLASS_DIR: 1,
         }
-
         self.items: List[Tuple[Path, int]] = []
         for folder_name, y in self.class_map.items():
             d = self.root / folder_name
@@ -93,7 +91,6 @@ def main():
     train_ds = SquaresDataset(PARENT_FOLDER, "train")
     val_ds = SquaresDataset(PARENT_FOLDER, "val")
 
-    # Balanced batches (important with ~4500 ID vs ~500 OOD)
     train_labels = [y for _, y in train_ds.items]
     train_sampler = _make_balanced_sampler(train_labels)
 
@@ -104,7 +101,6 @@ def main():
 
     model = OOD_DETECTOR(pretrained=PRETRAINED).to(DEVICE)
 
-    # pos_weight (optional, but helps push recall on OOD)
     n0 = sum(1 for y in train_labels if y == 0)
     n1 = sum(1 for y in train_labels if y == 1)
     pos_weight = torch.tensor([max(1.0, n0 / max(1, n1))], device=DEVICE)
@@ -141,7 +137,6 @@ def main():
 
             train_losses.append(float(loss.item()))
 
-            # collect for train AUROC on-the-fly (approx; still useful)
             with torch.no_grad():
                 probs = torch.sigmoid(logits)
                 y_true.extend([int(v) for v in y])
@@ -152,7 +147,6 @@ def main():
         train_max = float(np.max(train_losses)) if train_losses else float("nan")
         train_auc = binary_auroc(np.array(y_true), np.array(y_score)) if y_true else float("nan")
 
-        # Validation
         val_losses = []
         val_scores = []
         val_labels = []

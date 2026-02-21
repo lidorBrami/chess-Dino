@@ -1,4 +1,3 @@
-"""Eval FEN without OOD detection — ablation study."""
 import csv
 import os
 import sys

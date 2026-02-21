@@ -1,7 +1,3 @@
-"""
-Custom hook to compute pure classification accuracy (no bbox) on train and val sets.
-Runs every eval_period iterations. Logs to metrics via EventStorage.
-"""
 import os
 import sys
 import json
@@ -38,7 +34,6 @@ def compute_iou(box1, box2):
 
 
 def load_coco_annotations(ann_path, img_dir):
-    """Load COCO annotations, return (image_annotations, image_info)."""
     with open(ann_path) as f:
         coco = json.load(f)
     cat_id_to_name = {c['id']: c['name'] for c in coco['categories']}
@@ -53,7 +48,6 @@ def load_coco_annotations(ann_path, img_dir):
 
 
 def compute_cls_accuracy(model, image_annotations, image_info, max_images=None):
-    """Run model on images, match by IoU, return pure classification accuracy and loss."""
     correct = 0
     total = 0
     all_pred_scores = []
@@ -151,7 +145,6 @@ def compute_cls_accuracy(model, image_annotations, image_info, max_images=None):
 
 
 class ClsAccuracyHook(HookBase):
-    """Hook that computes classification accuracy on train and val subsets."""
 
     def __init__(self, eval_period, train_ann_path, train_img_dir,
                  val_ann_path, val_img_dir, train_sample_size=200):
@@ -171,10 +164,8 @@ class ClsAccuracyHook(HookBase):
         model = self.trainer.model
         model.eval()
 
-        # Validation accuracy + loss (all images)
         val_acc, val_c, val_t, val_loss = compute_cls_accuracy(model, self._val_anns, self._val_info)
 
-        # Training accuracy + loss (sample to save time)
         train_acc, train_c, train_t, train_loss = compute_cls_accuracy(
             model, self._train_anns, self._train_info, max_images=self._train_sample_size)
 

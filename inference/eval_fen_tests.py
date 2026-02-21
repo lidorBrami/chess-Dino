@@ -69,11 +69,8 @@ def compare_boards_with_ood(pred_tensor, gt_board):
 
 
 def load_txt_dataset(game_dir):
-    """Load FEN.txt + images. Images can be in images/ subfolder or same folder."""
     fen_path = os.path.join(game_dir, 'FEN.txt')
     img_dir = os.path.join(game_dir, 'images')
-
-    # If no images/ subfolder, use same folder as FEN.txt
     if not os.path.exists(img_dir):
         img_dir = game_dir
 
@@ -90,7 +87,6 @@ def load_txt_dataset(game_dir):
 
 
 def load_csv_dataset(csv_path, img_dir):
-    """Load CSV + image directory. Returns list of (image_path, fen)."""
     with open(csv_path) as f:
         reader = csv.DictReader(f)
         rows = list(reader)
@@ -107,7 +103,6 @@ def load_csv_dataset(csv_path, img_dir):
 
 
 def eval_game(pairs, game_name, save_dir=None):
-    """Evaluate a list of (image_path, fen) pairs."""
     if save_dir:
         os.makedirs(save_dir, exist_ok=True)
 
@@ -115,9 +110,9 @@ def eval_game(pairs, game_name, save_dir=None):
     total_squares = 0
     total_images = 0
     per_class_correct = {}
-    per_class_total = {}      # how many GT squares per class (for recall)
-    per_class_pred_total = {} # how many predicted per class (for precision)
-    per_class_pred_correct = {} # how many predicted correctly per class (for precision)
+    per_class_total = {}
+    per_class_pred_total = {}
+    per_class_pred_correct = {}
 
     for img_path, gt_fen in pairs:
         fname = os.path.basename(img_path)
@@ -130,7 +125,6 @@ def eval_game(pairs, game_name, save_dir=None):
         total_squares += squares
         total_images += 1
 
-        # Per-class tracking (including OOD as a class)
         for r in range(8):
             for c in range(8):
                 g = gt_board[r][c]
@@ -140,12 +134,10 @@ def eval_game(pairs, game_name, save_dir=None):
                 gt_name = 'x' if g == OOD else ENC_TO_CH.get(g, '?')
                 pr_name = 'x' if p == OOD else ENC_TO_CH.get(p, '?')
 
-                # Recall: correct / GT total
                 per_class_total[gt_name] = per_class_total.get(gt_name, 0) + 1
                 if p == g:
                     per_class_correct[gt_name] = per_class_correct.get(gt_name, 0) + 1
 
-                # Precision: correct / Pred total
                 per_class_pred_total[pr_name] = per_class_pred_total.get(pr_name, 0) + 1
                 if p == g:
                     per_class_pred_correct[pr_name] = per_class_pred_correct.get(pr_name, 0) + 1
@@ -212,7 +204,6 @@ if __name__ == "__main__":
         print(f"  Loaded {len(pairs)} image-FEN pairs")
         eval_game(pairs, game_name)
 
-    # CSV-format games (game.csv + images/)
     csv_games = ["game5", "game2"]
 
     for game_name in csv_games:
@@ -229,3 +220,4 @@ if __name__ == "__main__":
         pairs = load_csv_dataset(csv_path, img_dir)
         print(f"  Loaded {len(pairs)} image-FEN pairs")
         eval_game(pairs, game_name)
+irs, game_name)

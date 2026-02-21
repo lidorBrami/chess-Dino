@@ -6,17 +6,8 @@ from detrex.modeling.matcher import HungarianMatcher
 from .models.dino_swin_large_384 import model
 from projects.dino.modeling.weighted_criterion import WeightedDINOCriterion
 
-# Number of chess piece classes (13 categories: 0-12 in your COCO dataset)
 NUM_CLASSES = 13
 
-# Class weights based on inverse frequency (higher = rarer class)
-# Order: 1, black-bishop, black-king, black-knight, black-pawn, black-queen,
-#        black-rook, white-bishop, white-king, white-knight, white-pawn, white-queen, white-rook
-# Adjusted based on confusion matrix analysis:
-# - Reduce queen weights (was over-predicting, causing confusion with bishops/kings)
-# - Fix rook/bishop confusion: increase rook weights, reduce bishop weights
-# Weights optimized for FEN accuracy - every piece must be correct
-# Based on confusion matrix: boost classes that get confused most
 CLASS_WEIGHTS = [
     1.0,    # background
     1.0,    # black-bishop
@@ -33,7 +24,6 @@ CLASS_WEIGHTS = [
     1.0,    # white-rook
 ]
 
-# Register chess datasets
 import os as _os
 from detectron2.data import DatasetCatalog as _DC
 DATA_ROOT = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..", "..", "data", "dino"))
@@ -42,7 +32,6 @@ def _safe_register(name, meta, json_file, image_root):
     if name not in _DC.list():
         register_coco_instances(name, meta, json_file, image_root)
 
-# Register training dataset (original)
 _safe_register(
     "chess_train",
     {},
@@ -62,7 +51,6 @@ _safe_register(
     f"{DATA_ROOT}/train/train/game6"
 )
 
-# Register new game folders (only existing ones)
 for game_name in ["game4.3", "game4.4", "game6.3", "game6.4", "game7.3", "game7.4"]:
     _safe_register(
         f"chess_{game_name.replace('.', '_')}", {},
@@ -70,7 +58,6 @@ for game_name in ["game4.3", "game4.4", "game6.3", "game6.4", "game7.3", "game7.
         f"{DATA_ROOT}/train/train/{game_name}"
     )
 
-# Register new train.X folders
 for train_name in ["train.7"]:
     _safe_register(
         f"chess_{train_name.replace('.', '_')}", {},
@@ -78,7 +65,6 @@ for train_name in ["train.7"]:
         f"{DATA_ROOT}/train/train/{train_name}"
     )
 
-# Register new data folders (more_chess, toAdd, n1, n2)
 for folder in ["more_chess", "toAdd", "n1", "n2"]:
     _safe_register(
         f"chess_{folder}", {},
@@ -86,7 +72,6 @@ for folder in ["more_chess", "toAdd", "n1", "n2"]:
         f"{DATA_ROOT}/train/train/{folder}"
     )
 
-# Register game8, game9, and new games
 for gname in ["game9", "game10.2", "game11.1", "game11.2", "game11.3", "game12"]:
     _safe_register(
         f"chess_{gname.replace('.', '_')}", {},
@@ -94,17 +79,14 @@ for gname in ["game9", "game10.2", "game11.1", "game11.2", "game11.3", "game12"]
         f"{DATA_ROOT}/train/train/{gname}"
     )
 
-# Register validation set with ALL games (merged annotations)
 _safe_register(
     "chess_val_merged", {},
     f"{DATA_ROOT}/val/game2/_annotations_merged.coco.json",
     f"{DATA_ROOT}/val/game2"
 )
 
-# get default config
 dataloader = get_config("common/data/coco_detr.py").dataloader
 
-# Reduce image size for memory
 dataloader.train.mapper.augmentation = [
     L(T.RandomFlip)(),
     L(T.ResizeShortestEdge)(
@@ -139,10 +121,8 @@ optimizer = get_config("common/optim.py").AdamW
 lr_multiplier = get_config("common/coco_schedule.py").lr_multiplier_12ep
 train = get_config("common/train.py").train
 
-# Set number of classes for chess pieces
 model.num_classes = NUM_CLASSES
 
-# Use weighted criterion for class imbalance
 model.criterion = L(WeightedDINOCriterion)(
     num_classes=NUM_CLASSES,
     matcher=L(HungarianMatcher)(
@@ -168,11 +148,9 @@ model.criterion = L(WeightedDINOCriterion)(
     class_weights=CLASS_WEIGHTS,
 )
 
-# modify training config - use pretrained DINO Swin-Large
 train.init_checkpoint = _os.path.join(DATA_ROOT, "..", "..", "weights", "dino_swin_large_384_4scale_36ep.pth")
 train.output_dir = "./output/dino_chess_ablation_uniform"
 
-# Set aux loss weight dict for weighted criterion
 import copy
 base_weight_dict = copy.deepcopy(model.criterion.weight_dict)
 if model.aux_loss:
@@ -187,31 +165,23 @@ if model.aux_loss:
 train.max_iter = 10000
 train.eval_period = 200
 train.log_period = 20
-train.checkpointer.period = 200  # Save more frequently to survive preemption
+train.checkpointer.period = 200  # survive preemption
 
-# gradient clipping for training
 train.clip_grad.enabled = True
 train.clip_grad.params.max_norm = 0.1
 train.clip_grad.params.norm_type = 2
 
-# set training devices
 train.device = "cuda"
 model.device = train.device
 
-# modify optimizer config - lower LR for fine-tuning
 optimizer.lr = 1e-5
 optimizer.betas = (0.9, 0.999)
 optimizer.weight_decay = 1e-4
 optimizer.params.lr_factor_func = lambda module_name: 0.1 if "backbone" in module_name else 1
 
-# modify dataloader config
 dataloader.train.num_workers = 4
-
-# Batch size - reduced for memory
 dataloader.train.total_batch_size = 2
 
-# Set dataset paths to your chess data
-# Use all training folders
 dataloader.train.dataset.names = (
     "chess_train", "chess_game7", "chess_game6",
     "chess_game4_3", "chess_game4_4",
@@ -222,6 +192,6 @@ dataloader.train.dataset.names = (
     "chess_game9",
     "chess_game10_2", "chess_game11_1", "chess_game11_2", "chess_game11_3", "chess_game12",
 )
-dataloader.test.dataset.names = "chess_val_merged"  # Use merged validation (558 images)
+dataloader.test.dataset.names = "chess_val_merged"
 
 

@@ -65,7 +65,6 @@ def binary_auroc(y_true: np.ndarray, y_score: np.ndarray) -> float:
 
 
 def compute_metrics_from_probs(y_true: np.ndarray, p_ood: np.ndarray, threshold: float) -> dict:
-    """Return confusion matrix + accuracy + recall + auroc."""
     y_true = np.asarray(y_true).astype(np.int64)
     p_ood = np.asarray(p_ood).astype(np.float64)
 
