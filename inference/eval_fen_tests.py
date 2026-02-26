@@ -161,7 +161,7 @@ def eval_game(pairs, game_name, save_dir=None):
     print(f"\n  Per-class Recall & Precision:")
     print(f"    {'Class':5s}  {'Recall':>15s}  {'Precision':>15s}")
     print(f"    {'-'*5}  {'-'*15}  {'-'*15}")
-    for cls_name in ['K','Q','R','B','N','P','k','q','r','b','n','p','.','x']:
+    for cls_name in ['K','Q','R','B','N','P','k','q','r','b','n','p','.']:
         gt_t = per_class_total.get(cls_name, 0)
         gt_c = per_class_correct.get(cls_name, 0)
         pr_t = per_class_pred_total.get(cls_name, 0)
@@ -220,4 +220,3 @@ if __name__ == "__main__":
         pairs = load_csv_dataset(csv_path, img_dir)
         print(f"  Loaded {len(pairs)} image-FEN pairs")
         eval_game(pairs, game_name)
-irs, game_name)

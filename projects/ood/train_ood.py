@@ -1,4 +1,6 @@
 import csv
+import os
+import sys
 from pathlib import Path
 from typing import List, Tuple
 
@@ -9,6 +11,7 @@ import torchvision.transforms as T
 from PIL import Image
 import tqdm
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "inference")))
 from ood_model import OOD_DETECTOR, binary_auroc
 from cfg import *
 

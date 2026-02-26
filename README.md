@@ -22,10 +22,6 @@ A two-stage system that takes a chessboard image and outputs a complete board st
 
 Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR with Improved DeNoising Anchor Boxes).
 
-<p align="center">
-  <img src="report/figures/system_architecture.png" width="700" alt="System Architecture">
-</p>
-
 ---
 
 ## 🏗️ Project Structure
@@ -42,12 +38,14 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 │       ├── weighted_criterion.py    #   Weighted loss for class imbalance
 │       └── ood_detector.py          #   Mahalanobis OOD detector
 │
+├── projects/ood/                    # OOD detector training
+│   └── train_ood.py                 #   OOD model training script
+│
 ├── inference/                       # Inference & evaluation pipeline
 │   ├── predict_board.py             #   Full board prediction (DINO + OOD)
 │   ├── pieces_detection.py          #   DINO piece detection module
 │   ├── ood_detection.py             #   OOD square detection module
 │   ├── ood_model.py                 #   MobileNetV3 OOD model definition
-│   ├── train_ood.py                 #   OOD model training
 │   ├── cfg.py                       #   Configuration constants
 │   └── eval_fen_tests.py            #   FEN accuracy evaluation
 │
@@ -94,6 +92,8 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 
 ## 🚀 Environment Setup
 
+**Prerequisites:** A machine with an NVIDIA GPU and CUDA drivers installed. Verify with `nvidia-smi`.
+
 ### 1. Clone the repository
 
 ```bash
@@ -115,17 +115,12 @@ conda activate chess
 conda install pytorch==1.10.1 torchvision==0.11.2 cudatoolkit=11.3 -c pytorch -c conda-forge
 ```
 
-### 4. Install C++ compiler
+### 4. Install C++ compiler (if needed)
 
-A C++ compiler (`g++`) is required to build the detectron2 and detrex C++ extensions. If your system does not have `g++` available, install it via conda:
+A C++ compiler (`g++`) is required to build the detectron2 and detrex C++ extensions. Most Linux systems already have it — check with `which g++`. If not available, install via conda:
 
 ```bash
 conda install -y -c conda-forge gcc_linux-64=11.4.0 gxx_linux-64=11.4.0 libxcrypt
-```
-
-Then create a `g++` symlink so PyTorch can find it:
-
-```bash
 ln -sf $CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++ $CONDA_PREFIX/bin/g++
 ```
 
@@ -149,22 +144,22 @@ cd ..
 pip install -e .
 ```
 
+
 ### 7. Download data and weights
 
 The dataset and model weights are not included in this repository due to their size. Download them from our Google Drive:
 
-> **[Download weights from Google Drive](https://drive.google.com/drive/folders/171O4a8FFRloupBf_Rth5bTv1XzCwL3J-)** (~2.5 GB)
+> **[Download weights from Google Drive](https://drive.google.com/drive/folders/171O4a8FFRloupBf_Rth5bTv1XzCwL3J-)** 
 >
-> **[Download data from Google Drive](https://drive.google.com/drive/folders/132CT931JP1SleatsDDebEdmQ41fQaiIR)** (~1.55 GB)
+> **[Download data from Google Drive](https://drive.google.com/drive/folders/132CT931JP1SleatsDDebEdmQ41fQaiIR)** 
 
 After downloading, place them in the repository root:
 
 ```bash
 mkdir -p weights data
 # Place the following files:
-# weights/dino_swin_large_384_4scale_36ep.pth  (COCO pretrained, ~800MB)
-# weights/dino_chess_model.pth                  (fine-tuned chess detector, ~2.5GB)
-# weights/mobilenet_v3_small_weights.pth        (OOD detector, ~5MB)
+# weights/dino_chess_model.pth                  (fine-tuned chess detector)
+# weights/mobilenet_v3_small_weights.pth        (OOD detector)
 # data/dino/                                    (training & validation data)
 # data/eval/                                    (evaluation data)
 ```
@@ -270,13 +265,12 @@ python projects/dino/train_net.py \
 
 </details>
 
-Output: `./output/dino_chess_v25/model_final.pth`
+Output: `./output/dino_chess/model_final.pth`
 
 ### OOD Detector
 
 ```bash
-cd inference
-python train_ood.py
+python projects/ood/train_ood.py
 ```
 
 Trains MobileNetV3-Small binary classifier (ID vs OOD) for 30 epochs with balanced sampling.

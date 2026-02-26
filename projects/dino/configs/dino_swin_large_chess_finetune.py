@@ -89,7 +89,7 @@ model.criterion = L(WeightedDINOCriterion)(
 )
 
 train.init_checkpoint = _os.path.join(DATA_ROOT, "..", "..", "weights", "dino_chess_model.pth")
-train.output_dir = "./output/dino_chess_v25"
+train.output_dir = "./output/dino_chess"
 
 import copy
 base_weight_dict = copy.deepcopy(model.criterion.weight_dict)
