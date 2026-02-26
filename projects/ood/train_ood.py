@@ -121,6 +121,9 @@ def main():
             "train_auroc", "val_auroc",
         ])
 
+    best_val_loss = float("inf")
+    best_ckpt_path = None
+
     for epoch in range(1, EPOCH + 1):
         model.train()
         train_losses = []
@@ -171,16 +174,24 @@ def main():
         val_max = float(np.max(val_losses)) if val_losses else float("nan")
         val_auc = binary_auroc(np.array(val_labels), np.array(val_scores)) if val_labels else float("nan")
 
-        ckpt_path = out_dir / f"{WEIGHTS_NAME}_epoch_{epoch:03d}_val{val_mean:.4f}.pth"
-        torch.save(
-            {
-                "state_dict": model.state_dict(),
-                "resize_img_size": RESIZE_IMG_SIZE,
-                "pretrained": PRETRAINED,
-                "pos_weight": float(pos_weight.item()),
-            },
-            ckpt_path,
-        )
+        saved_msg = ""
+        if val_mean < best_val_loss:
+            if best_ckpt_path and best_ckpt_path.exists():
+                best_ckpt_path.unlink()
+            best_val_loss = val_mean
+            best_ckpt_path = out_dir / f"model_best.pth"
+            torch.save(
+                {
+                    "state_dict": model.state_dict(),
+                    "resize_img_size": RESIZE_IMG_SIZE,
+                    "pretrained": PRETRAINED,
+                    "pos_weight": float(pos_weight.item()),
+                    "epoch": epoch,
+                    "val_loss": val_mean,
+                },
+                best_ckpt_path,
+            )
+            saved_msg = " -> saved model_best.pth"
 
         with open(log_path, "a", newline="") as f:
             csv.writer(f).writerow([
@@ -192,10 +203,10 @@ def main():
 
         print(
             f"[{epoch:03d}] train_loss={train_mean:.4f} val_loss={val_mean:.4f} "
-            f"train_AUROC={train_auc:.4f} val_AUROC={val_auc:.4f} saved={ckpt_path.name}"
+            f"train_AUROC={train_auc:.4f} val_AUROC={val_auc:.4f}{saved_msg}"
         )
 
-    print(f"Done. Logs: {log_path} | Weights: {out_dir}")
+    print(f"Done. Best val_loss={best_val_loss:.4f} | Weights: {best_ckpt_path}")
 
 
 if __name__ == "__main__":

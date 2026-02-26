@@ -43,7 +43,7 @@ EVAL_MODEL_ON = "test"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-CLS_WEIGHTS_OUT_DIR = os.path.join(_CFG_DIR, "weights_ood_mobilenet_v3_small_bin")
+CLS_WEIGHTS_OUT_DIR = os.path.join(_ROOT_DIR, "output", "ood")
 WEIGHTS_NAME = "mobilenet_v3_small_bin"
 CLS_LOG_CSV = "train_log.csv"
 

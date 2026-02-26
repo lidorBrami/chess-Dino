@@ -59,14 +59,16 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 │       ├── game2/                   #     images/ + game2.csv
 │       └── game5/                   #     images/ + game5.csv
 │
-├── weights/                         # Model checkpoints
-│   ├── dino_swin_large_384_4scale_36ep.pth   # COCO pretrained (for training)
-│   ├── dino_chess_model.pth                   # Fine-tuned chess detector
-│   └── mobilenet_v3_small_weights.pth         # OOD detector
+├── output/                          # Training outputs
+│   ├── dino_chess/                  #   DINO training checkpoints
+│   └── ood/                         #   OOD training checkpoints
 │
-├── scripts/                         # SLURM batch scripts
+├── weights/                         # Pretrained model weights
+│   ├── dino_chess_model.pth         #   Fine-tuned chess detector
+│   └── mobilenet_v3_small_weights.pth  #   OOD detector
+│
 ├── report/                          # Report figures & PDFs
-├── detectron2/                      # Detectron2 framework (included)
+├── detectron2/                      # Detectron2 framework (submodule)
 ├── detrex/                          # Detrex framework (included)
 ├── requirements.txt
 └── README.md
@@ -274,6 +276,8 @@ python projects/ood/train_ood.py
 ```
 
 Trains MobileNetV3-Small binary classifier (ID vs OOD) for 30 epochs with balanced sampling.
+
+Output: `./output/ood/`
 
 ---
 
