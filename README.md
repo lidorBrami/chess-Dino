@@ -153,7 +153,9 @@ pip install -e .
 
 The dataset and model weights are not included in this repository due to their size. Download them from our Google Drive:
 
-> **[Download data and weights from Google Drive](https://drive.google.com/YOUR_LINK_HERE)**
+> **[Download weights from Google Drive](https://drive.google.com/drive/folders/171O4a8FFRloupBf_Rth5bTv1XzCwL3J-)** (~2.5 GB)
+>
+> **[Download data from Google Drive](https://drive.google.com/drive/folders/132CT931JP1SleatsDDebEdmQ41fQaiIR)** (~1.55 GB)
 
 After downloading, place them in the repository root:
 
@@ -171,7 +173,7 @@ Alternatively, download only the COCO pretrained weights for training from scrat
 
 ```bash
 mkdir -p weights
-wget -P weights/ https://github.com/IDEA-Research/detrex-storage/releases/download/v0.2.1/dino_swin_large_384_4scale_36ep.pth
+wget -P weights/ https://github.com/IDEA-Research/detrex-storage/releases/download/v0.2.0/dino_swin_large_384_4scale_36ep.pth
 ```
 
 ---
