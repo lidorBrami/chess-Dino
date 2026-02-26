@@ -105,8 +105,8 @@ git submodule update --init --recursive
 ### 2. Create conda environment
 
 ```bash
-conda create -n detrex python=3.7 -y
-conda activate detrex
+conda create -n chess python=3.7 -y
+conda activate chess
 ```
 
 ### 3. Install PyTorch (CUDA 11.3)
@@ -115,13 +115,29 @@ conda activate detrex
 conda install pytorch==1.10.1 torchvision==0.11.2 cudatoolkit=11.3 -c pytorch -c conda-forge
 ```
 
-### 4. Install dependencies
+### 4. Install C++ compiler
+
+A C++ compiler (`g++`) is required to build the detectron2 and detrex C++ extensions. If your system does not have `g++` available, install it via conda:
+
+```bash
+conda install -y -c conda-forge gcc_linux-64=11.4.0 gxx_linux-64=11.4.0 libxcrypt
+```
+
+Then create a `g++` symlink so PyTorch can find it:
+
+```bash
+ln -sf $CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++ $CONDA_PREFIX/bin/g++
+```
+
+> **Note:** GCC 11 is recommended. Newer versions (e.g., GCC 15) are incompatible with PyTorch 1.10.1 headers.
+
+### 5. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Install detectron2 & detrex
+### 6. Install detectron2 & detrex
 
 Both are included in this repository. Install in development mode:
 
@@ -133,7 +149,7 @@ cd ..
 pip install -e .
 ```
 
-### 6. Download data and weights
+### 7. Download data and weights
 
 The dataset and model weights are not included in this repository due to their size. Download them from our Google Drive:
 
@@ -242,7 +258,7 @@ python projects/dino/train_net.py \
 | Parameter | Value |
 |-----------|-------|
 | Backbone | Swin-Large 384, COCO pretrained |
-| Iterations | 5,000 |
+| Iterations | 10,000 |
 | Batch size | 2 |
 | Optimizer | AdamW |
 | Learning rate | 1e-5 (backbone: 1e-6) |

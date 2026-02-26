@@ -6,6 +6,7 @@ tqdm==4.67.1
 scipy==1.7.3
 opencv-python==4.12.0.88
 timm==0.9.12
+safetensors==0.4.5
 einops==0.6.1
 fairscale==0.4.6
 cloudpickle==2.2.1
