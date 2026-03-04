@@ -78,7 +78,7 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 
 ## 🎯 Classes
 
-13 detection classes — 12 piece types + background:
+14 detection classes — 12 piece types + background + OOD (occluded):
 
 | ID | Class | ID | Class |
 |:--:|:------|:--:|:------|
@@ -296,11 +296,8 @@ python projects/dino/inference_chess.py \
 ```
 
 ### Full board prediction — DINO + OOD → 8x8 board state
-
-```bash
-cd inference
-python predict_board.py
-```
+In order to predict a full board, as instructed in the assignament requirements, use predict_board(image: np.ndarray) -> torch.Tensor function implemented in 
+inference/predict_board.py file (predict_board.py file inside inference folder)
 
 Pipeline:
 1. **OOD detection** — crops each of 64 squares, classifies ID vs OOD
