@@ -99,9 +99,8 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/lidorBrami/chess-Dino.git
+git clone --recursive https://github.com/lidorBrami/chess-Dino.git
 cd chess-Dino
-git submodule update --init --recursive
 ```
 
 ### 2. Create conda environment
@@ -114,19 +113,19 @@ conda activate chess
 ### 3. Install PyTorch (CUDA 11.3)
 
 ```bash
-conda install pytorch==1.10.1 torchvision==0.11.2 cudatoolkit=11.3 -c pytorch -c conda-forge
+conda install pytorch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 cudatoolkit=11.3 -c pytorch -c conda-forge -y
 ```
 
-### 4. Install C++ compiler (if needed)
+### 4. Install C++ compiler
 
-A C++ compiler (`g++`) is required to build the detectron2 and detrex C++ extensions. Most Linux systems already have it — check with `which g++`. If not available, install via conda:
+A C++ compiler (`g++`) is required to build the detectron2 and detrex CUDA/C++ extensions. Install GCC 9.3 via conda (compatible with CUDA 11.3):
 
 ```bash
-conda install -y -c conda-forge gcc_linux-64=11.4.0 gxx_linux-64=11.4.0 libxcrypt
+conda install -y -c conda-forge gcc_linux-64=9.3.0 gxx_linux-64=9.3.0 libxcrypt
 ln -sf $CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++ $CONDA_PREFIX/bin/g++
 ```
 
-> **Note:** GCC 11 is recommended. Newer versions (e.g., GCC 15) are incompatible with PyTorch 1.10.1 headers.
+> **Note:** GCC 9.3 is recommended. GCC 11+ headers are incompatible with CUDA 11.3's nvcc parser.
 
 ### 5. Install dependencies
 
@@ -134,16 +133,59 @@ ln -sf $CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++ $CONDA_PREFIX/bin/g++
 pip install -r requirements.txt
 ```
 
-### 6. Install detectron2 & detrex
-
-Both are included in this repository. Install in development mode:
+### 6. Install detectron2
 
 ```bash
 cd detectron2
 pip install -e .
 cd ..
+```
 
-pip install -e .
+### 7. Install detrex (with CUDA extensions)
+
+Detrex requires CUDA extensions (MultiScaleDeformableAttention, DCNv3) compiled with GPU support. This step must be run on a machine with a GPU and CUDA toolkit installed.
+
+**If your system GCC is <= 10 and CUDA 11.3 is installed:**
+
+```bash
+FORCE_CUDA=1 pip install -e .
+```
+
+**If your system GCC is 11+ (common on modern Linux):**
+
+CUDA 11.3's nvcc cannot parse GCC 11+ headers. Use CUDA 11.8+ for compilation instead:
+
+```bash
+# If using environment modules (e.g., SLURM cluster):
+module load cuda/11.8
+
+# Or set CUDA_HOME manually to a CUDA >= 11.8 installation:
+# export CUDA_HOME=/usr/local/cuda-11.8
+
+rm -rf build/ detrex/_C*.so detrex.egg-info/
+export C_INCLUDE_PATH="$CONDA_PREFIX/include"
+export CPLUS_INCLUDE_PATH="$CONDA_PREFIX/include"
+CC=/usr/bin/gcc CXX=/usr/bin/g++ FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="8.6" pip install -e . --no-build-isolation --no-deps
+```
+
+> **Note:** Set `TORCH_CUDA_ARCH_LIST` to match your GPU architecture (e.g., `8.6` for RTX 3090/4090, `7.5` for RTX 2080, `7.0` for V100). The compiled extensions are compatible with PyTorch's CUDA 11.3 runtime.
+
+### 8. Patch detectron2 for Python 3.7
+
+The bundled detectron2 uses `functools.cached_property` which requires Python 3.8+. Apply this patch:
+
+In `detectron2/detectron2/utils/events.py`, replace:
+```python
+from functools import cached_property
+```
+with:
+```python
+try:
+    from functools import cached_property
+except ImportError:
+    from functools import lru_cache
+    def cached_property(func):
+        return property(lru_cache(maxsize=None)(func))
 ```
 
 
@@ -228,6 +270,12 @@ data/eval/
 ---
 
 ## 🏋️ Training
+
+> **Important:** Training requires a machine with an NVIDIA GPU. If you are on a SLURM cluster, allocate a GPU node first:
+> ```bash
+> srun --partition=<gpu_partition> --gpus=1 --mem=32G --cpus-per-task=4 --time=04:00:00 --pty bash
+> conda activate chess
+> ```
 
 ### DINO — Piece Detection
 
