@@ -118,14 +118,23 @@ conda install pytorch==1.10.1 torchvision==0.11.2 torchaudio==0.10.1 cudatoolkit
 
 ### 4. Install C++ compiler
 
-A C++ compiler (`g++`) is required to build the detectron2 and detrex CUDA/C++ extensions. Install GCC 9.3 via conda (compatible with CUDA 11.3):
+A C++ compiler (`g++`) is required to build the detectron2 and detrex CUDA/C++ extensions. Install GCC 9.3 via conda (compatible with CUDA 11.3's nvcc):
 
 ```bash
 conda install -y -c conda-forge gcc_linux-64=9.3.0 gxx_linux-64=9.3.0 libxcrypt
 ln -sf $CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++ $CONDA_PREFIX/bin/g++
 ```
 
-> **Note:** GCC 9.3 is recommended. GCC 11+ headers are incompatible with CUDA 11.3's nvcc parser.
+Then fix two conda sysroot issues required for nvcc CUDA compilation:
+
+```bash
+ln -sf $CONDA_PREFIX/include/crypt.h $CONDA_PREFIX/x86_64-conda-linux-gnu/sysroot/usr/include/crypt.h
+
+sed -i 's/#ifdef __SIZEOF_INT128__/#if defined(__SIZEOF_INT128__) \&\& !defined(__CUDACC__)/' \
+    $CONDA_PREFIX/x86_64-conda-linux-gnu/sysroot/usr/include/linux/types.h
+```
+
+> **Note:** GCC <= 10 is required. CUDA 11.3's nvcc rejects GCC 11+.
 
 ### 5. Install dependencies
 
@@ -133,44 +142,24 @@ ln -sf $CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++ $CONDA_PREFIX/bin/g++
 pip install -r requirements.txt
 ```
 
-### 6. Install detectron2
+### 6. Install detectron2 & detrex
 
 ```bash
+# Load CUDA 11.3 toolkit (unload first if another version is loaded)
+module unload cuda 2>/dev/null; module load cuda/11.3
+
+# Install detectron2
 cd detectron2
 pip install -e .
 cd ..
+
+# Install detrex with CUDA extensions
+FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="8.6" pip install -e .
 ```
 
-### 7. Install detrex (with CUDA extensions)
+> **Note:** Set `TORCH_CUDA_ARCH_LIST` to match your target GPU (e.g., `"8.6"` for RTX 3090/4090, `"7.5"` for RTX 2080, `"7.0"` for V100). A GPU is **not** required for compilation, only the CUDA toolkit.
 
-Detrex requires CUDA extensions (MultiScaleDeformableAttention, DCNv3) compiled with GPU support. This step must be run on a machine with a GPU and CUDA toolkit installed.
-
-**If your system GCC is <= 10 and CUDA 11.3 is installed:**
-
-```bash
-FORCE_CUDA=1 pip install -e .
-```
-
-**If your system GCC is 11+ (common on modern Linux):**
-
-CUDA 11.3's nvcc cannot parse GCC 11+ headers. Use CUDA 11.8+ for compilation instead:
-
-```bash
-# If using environment modules (e.g., SLURM cluster):
-module load cuda/11.8
-
-# Or set CUDA_HOME manually to a CUDA >= 11.8 installation:
-# export CUDA_HOME=/usr/local/cuda-11.8
-
-rm -rf build/ detrex/_C*.so detrex.egg-info/
-export C_INCLUDE_PATH="$CONDA_PREFIX/include"
-export CPLUS_INCLUDE_PATH="$CONDA_PREFIX/include"
-CC=/usr/bin/gcc CXX=/usr/bin/g++ FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="8.6" pip install -e . --no-build-isolation --no-deps
-```
-
-> **Note:** Set `TORCH_CUDA_ARCH_LIST` to match your GPU architecture (e.g., `8.6` for RTX 3090/4090, `7.5` for RTX 2080, `7.0` for V100). The compiled extensions are compatible with PyTorch's CUDA 11.3 runtime.
-
-### 8. Patch detectron2 for Python 3.7
+### 7. Patch detectron2 for Python 3.7
 
 The bundled detectron2 uses `functools.cached_property` which requires Python 3.8+. Apply this patch:
 
@@ -188,8 +177,7 @@ except ImportError:
         return property(lru_cache(maxsize=None)(func))
 ```
 
-
-### 7. Download data and weights
+### 8. Download data and weights
 
 The dataset and model weights are not included in this repository due to their size. Download them from our Google Drive:
 
