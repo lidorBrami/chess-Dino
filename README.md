@@ -59,6 +59,15 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 │   │   ├── train/train/             #     Training (COCO format)
 │   │   └── val/                     #     Validation (COCO format)
 │   ├── ood/                         #   OOD training (binary: 0=ID, 2=OOD)
+│   │   ├── train/
+│   │   │   ├── 0/                   #     In-distribution square crops (*.jpg)
+│   │   │   └── 2/                   #     OOD square crops: hands, occluded (*.jpg)
+│   │   ├── val/
+│   │   │   ├── 0/
+│   │   │   └── 2/
+│   │   └── test/
+│   │       ├── 0/
+│   │       └── 2/
 │   └── eval/                        #   End-to-end evaluation
 │       ├── game13/                  #     images/ + FEN.txt
 │       ├── game2/                   #     images/ + game2.csv
