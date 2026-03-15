@@ -8,12 +8,12 @@ from PIL import Image
 
 DETREX_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, DETREX_ROOT)
-sys.path.insert(0, os.path.join(DETREX_ROOT, "projects", "dino"))
+sys.path.insert(0, os.path.join(DETREX_ROOT, "src"))
 
 from detectron2.config import LazyConfig, instantiate
 
-CONFIG_PATH = os.path.join(DETREX_ROOT, "projects", "dino", "configs", "dino_swin_large_chess_finetune.py")
-CHECKPOINT_PATH = os.path.join(DETREX_ROOT, "output", "dino_chess", "model_best.pth")
+CONFIG_PATH = os.path.join(DETREX_ROOT, "src", "piece_detector", "configs", "dino_swin_large_chess_finetune.py")
+CHECKPOINT_PATH = os.path.join(DETREX_ROOT, "weights", "dino_chess_model.pth")
 CONFIDENCE_THRESHOLD = 0.3
 
 DINO_TO_ENCODING = {

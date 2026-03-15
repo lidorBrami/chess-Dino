@@ -4,7 +4,7 @@ from detectron2.data.datasets import register_coco_instances
 from detrex.config import get_config
 from detrex.modeling.matcher import HungarianMatcher
 from .models.dino_swin_large_384 import model
-from projects.dino.modeling.weighted_criterion import WeightedDINOCriterion
+from piece_detector.modeling.weighted_criterion import WeightedDINOCriterion
 
 NUM_CLASSES = 13
 
