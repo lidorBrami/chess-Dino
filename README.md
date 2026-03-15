@@ -27,19 +27,24 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 ## 🏗️ Project Structure
 
 ```
-├── projects/dino/                   # DINO training (detrex framework)
-│   ├── train_net.py                 #   Training script
-│   ├── inference_chess.py           #   Single-image inference with visualization
-│   ├── cls_accuracy_hook.py         #   Classification accuracy hook
-│   ├── configs/
-│   │   └── dino_swin_large_chess_finetune.py
-│   └── modeling/
-│       ├── dino.py                  #   DINO model
-│       ├── weighted_criterion.py    #   Weighted loss for class imbalance
-│       └── ood_detector.py          #   Mahalanobis OOD detector
+├── third_party/
+│   ├── detectron2/                  # Detectron2 framework (submodule)
+│   └── detrex_repo/                 # Detrex framework (included)
 │
-├── projects/ood/                    # OOD detector training
-│   └── train_ood.py                 #   OOD model training script
+├── src/
+│   ├── piece_detector/              # DINO training & configuration
+│   │   ├── train_net.py             #   Training script
+│   │   ├── inference_chess.py       #   Single-image inference with visualization
+│   │   ├── cls_accuracy_hook.py     #   Classification accuracy hook
+│   │   ├── configs/
+│   │   │   └── dino_swin_large_chess_finetune.py
+│   │   └── modeling/
+│   │       ├── dino.py              #   DINO model
+│   │       ├── weighted_criterion.py#   Weighted loss for class imbalance
+│   │       └── ood_detector.py      #   Mahalanobis OOD detector
+│   │
+│   └── ood_detector/                # OOD detector training
+│       └── train_ood.py             #   OOD model training script
 │
 ├── inference/                       # Inference & evaluation pipeline
 │   ├── predict_board.py             #   Full board prediction (DINO + OOD)
@@ -68,8 +73,6 @@ Built on top of [detrex](https://github.com/IDEA-Research/detrex) (DINO: DETR wi
 │   └── mobilenet_v3_small_weights.pth  #   OOD detector
 │
 ├── report/                          # Report figures & PDFs
-├── detectron2/                      # Detectron2 framework (submodule)
-├── detrex/                          # Detrex framework (included)
 ├── requirements.txt
 └── README.md
 ```
@@ -149,12 +152,14 @@ pip install -r requirements.txt
 module unload cuda 2>/dev/null; module load cuda/11.3
 
 # Install detectron2
-cd detectron2
+cd third_party/detectron2
 pip install -e .
-cd ..
+cd ../..
 
 # Install detrex with CUDA extensions
+cd third_party/detrex_repo
 FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="8.6" pip install -e .
+cd ../..
 ```
 
 > **Note:** Set `TORCH_CUDA_ARCH_LIST` to match your target GPU (e.g., `"8.6"` for RTX 3090/4090, `"7.5"` for RTX 2080, `"7.0"` for V100). A GPU is **not** required for compilation, only the CUDA toolkit.
@@ -163,7 +168,7 @@ FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="8.6" pip install -e .
 
 The bundled detectron2 uses `functools.cached_property` which requires Python 3.8+. Apply this patch:
 
-In `detectron2/detectron2/utils/events.py`, replace:
+In `third_party/detectron2/detectron2/utils/events.py`, replace:
 ```python
 from functools import cached_property
 ```
@@ -267,7 +272,7 @@ data/eval/
 
 ### DINO — Piece Detection
 
-Before training, update the following paths in `projects/dino/configs/dino_swin_large_chess_finetune.py`:
+Before training, update the following paths in `src/piece_detector/configs/dino_swin_large_chess_finetune.py`:
 
 - **`train.init_checkpoint`** — path to the starting weights:
   - For fine-tuning from COCO: `weights/dino_swin_large_384_4scale_36ep.pth`
@@ -277,13 +282,13 @@ Before training, update the following paths in `projects/dino/configs/dino_swin_
 
 ```bash
 # Single GPU
-python projects/dino/train_net.py \
-    --config-file projects/dino/configs/dino_swin_large_chess_finetune.py \
+python src/piece_detector/train_net.py \
+    --config-file src/piece_detector/configs/dino_swin_large_chess_finetune.py \
     --num-gpus 1
 
 # Multi-GPU
-python projects/dino/train_net.py \
-    --config-file projects/dino/configs/dino_swin_large_chess_finetune.py \
+python src/piece_detector/train_net.py \
+    --config-file src/piece_detector/configs/dino_swin_large_chess_finetune.py \
     --num-gpus 2
 ```
 
@@ -308,7 +313,7 @@ Output: `./output/dino_chess/model_final.pth`
 ### OOD Detector
 
 ```bash
-python projects/ood/train_ood.py
+python src/ood_detector/train_ood.py
 ```
 
 Trains MobileNetV3-Small binary classifier (ID vs OOD) for 30 epochs with balanced sampling.
@@ -324,7 +329,7 @@ Before running inference, ensure the model weights are placed in the `weights/` 
 ### Single image — bounding box visualization
 
 ```bash
-python projects/dino/inference_chess.py \
+python src/piece_detector/inference_chess.py \
     --image path/to/chessboard.jpg \
     --output path/to/output.jpg \
     --checkpoint weights/dino_chess_model.pth \

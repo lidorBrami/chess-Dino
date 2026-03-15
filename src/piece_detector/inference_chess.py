@@ -111,7 +111,7 @@ def main():
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--threshold", type=float, default=0.5)
     parser.add_argument("--checkpoint", type=str, default="weights/dino_chess_model.pth")
-    parser.add_argument("--config", type=str, default="projects/dino/configs/dino_swin_large_chess_finetune.py")
+    parser.add_argument("--config", type=str, default="src/piece_detector/configs/dino_swin_large_chess_finetune.py")
     args = parser.parse_args()
 
     register_datasets()
