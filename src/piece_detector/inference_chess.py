@@ -36,15 +36,7 @@ CLASS_COLORS = {
 }
 
 def register_datasets():
-    data_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "dino"))
-    if "chess_train" not in DatasetCatalog.list():
-        register_coco_instances("chess_train", {},
-            os.path.join(data_root, "train/train/_annotations.coco.json"),
-            os.path.join(data_root, "train/train"))
-    if "chess_val" not in DatasetCatalog.list():
-        register_coco_instances("chess_val", {},
-            os.path.join(data_root, "val/valid/_annotations.coco.json"),
-            os.path.join(data_root, "val/valid"))
+    pass
 
 
 def load_model(config_path, checkpoint_path, device="cuda"):

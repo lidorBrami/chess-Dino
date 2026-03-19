@@ -35,8 +35,8 @@ def _safe_register(name, meta, json_file, image_root):
 _safe_register(
     "chess_train",
     {},
-    f"{DATA_ROOT}/train/train/_annotations.coco.json",
-    f"{DATA_ROOT}/train/train"
+    f"{DATA_ROOT}/train/train/base/_annotations.coco.json",
+    f"{DATA_ROOT}/train/train/base"
 )
 
 _safe_register(
@@ -79,11 +79,10 @@ for gname in ["game9", "game10.2", "game11.1", "game11.2", "game11.3", "game12"]
         f"{DATA_ROOT}/train/train/{gname}"
     )
 
-_safe_register(
-    "chess_val_merged", {},
-    f"{DATA_ROOT}/val/game2/_annotations_merged.coco.json",
-    f"{DATA_ROOT}/val/game2"
-)
+_safe_register("chess_val_game2", {}, f"{DATA_ROOT}/val/game2/_annotations.coco.json", f"{DATA_ROOT}/val/game2")
+
+for val_name in ["game2.4", "game5", "game5.3", "game5.4", "game8", "nv1"]:
+    _safe_register(f"chess_val_{val_name.replace('.', '_')}", {}, f"{DATA_ROOT}/val/{val_name}/_annotations.coco.json", f"{DATA_ROOT}/val/{val_name}")
 
 dataloader = get_config("common/data/coco_detr.py").dataloader
 
@@ -192,6 +191,12 @@ dataloader.train.dataset.names = (
     "chess_game9",
     "chess_game10_2", "chess_game11_1", "chess_game11_2", "chess_game11_3", "chess_game12",
 )
-dataloader.test.dataset.names = "chess_val_merged"
+dataloader.test.dataset.names = (
+    "chess_val_game2",
+    "chess_val_game2_4",
+    "chess_val_game5", "chess_val_game5_3", "chess_val_game5_4",
+    "chess_val_game8",
+    "chess_val_nv1",
+)
 
 

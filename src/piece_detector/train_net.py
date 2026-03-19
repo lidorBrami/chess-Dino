@@ -24,26 +24,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.
 from detectron2.data.datasets import register_coco_instances
 
 
-def register_chess_datasets():
-    from detectron2.data import DatasetCatalog
-    data_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "dino"))
-
-    if "chess_train" not in DatasetCatalog.list():
-        train_json = os.path.join(data_root, "train/train/_annotations.coco.json")
-        train_images = os.path.join(data_root, "train/train")
-        if os.path.exists(train_json):
-            register_coco_instances("chess_train", {}, train_json, train_images)
-            print(f"Registered chess_train dataset")
-
-    if "chess_val" not in DatasetCatalog.list():
-        val_json = os.path.join(data_root, "val/valid/_annotations.coco.json")
-        val_images = os.path.join(data_root, "val/valid")
-        if os.path.exists(val_json):
-            register_coco_instances("chess_val", {}, val_json, val_images)
-            print(f"Registered chess_val dataset")
-
-
-register_chess_datasets()
 
 logger = logging.getLogger("detrex")
 
@@ -129,14 +109,26 @@ class Trainer(SimpleTrainer):
 
 class BestCheckpointHook(hooks.HookBase):
 
-    def __init__(self, eval_period, checkpointer, val_ann_path, val_img_dir,
+    def __init__(self, eval_period, checkpointer, val_dirs,
                  confidence_threshold=0.3, iou_threshold=0.5):
         self._period = eval_period
         self._checkpointer = checkpointer
         self._confidence_threshold = confidence_threshold
         self._iou_threshold = iou_threshold
         self._best_acc = -1.0
-        self._val_anns, self._val_info = self._load_coco(val_ann_path, val_img_dir)
+        self._val_anns = {}
+        self._val_info = {}
+        id_offset = 0
+        for val_dir in val_dirs:
+            ann_path = os.path.join(val_dir, "_annotations.coco.json")
+            if os.path.exists(ann_path):
+                anns, info = self._load_coco(ann_path, val_dir)
+                for old_id in sorted(anns.keys()):
+                    new_id = old_id + id_offset
+                    self._val_anns[new_id] = anns[old_id]
+                    self._val_info[new_id] = info[old_id]
+                if anns:
+                    id_offset += max(anns.keys()) + 1
 
     @staticmethod
     def _load_coco(ann_path, img_dir):
@@ -309,11 +301,13 @@ def do_train(args, cfg):
     )
 
     data_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "dino"))
+    val_root = os.path.join(data_root, "val")
+    val_dirs = [os.path.join(val_root, d) for d in sorted(os.listdir(val_root))
+                if os.path.isdir(os.path.join(val_root, d))]
     best_ckpt_hook = BestCheckpointHook(
         eval_period=cfg.train.eval_period,
         checkpointer=checkpointer,
-        val_ann_path=os.path.join(data_root, "val/game2/_annotations_merged.coco.json"),
-        val_img_dir=os.path.join(data_root, "val/game2"),
+        val_dirs=val_dirs,
     )
 
     trainer.register_hooks(
