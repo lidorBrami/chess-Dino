@@ -180,6 +180,7 @@ The bundled detectron2 uses `functools.cached_property` which requires Python 3.
 In `third_party/detectron2/detectron2/utils/events.py`, replace:
 ```python
 from functools import cached_property
+from typing import Optional
 ```
 with:
 ```python
@@ -189,6 +190,12 @@ except ImportError:
     from functools import lru_cache
     def cached_property(func):
         return property(lru_cache(maxsize=None)(func))
+from typing import Optional
+```
+
+**Important:** Make sure `from typing import Optional` is on its own line after the `except` block, not on the same line as the `return` statement. Also clear the bytecode cache after editing:
+```bash
+find third_party/detectron2/detectron2/utils/__pycache__ -name "events*" -delete
 ```
 
 ### 8. Download data and weights
